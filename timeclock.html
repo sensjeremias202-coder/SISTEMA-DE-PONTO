@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Ponto - Sistema de Ponto</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>🕐 Sistema Ponto</h2>
+                <p>Controle de Frequência</p>
+            </div>
+            <ul class="sidebar-nav">
+                <li><a href="dashboard.html">📊 Dashboard</a></li>
+                <li><a href="timeclock.html" class="active">🕒 Registrar Ponto</a></li>
+                <li><a href="manage-hours.html">⏱️ Gerenciar Horas</a></li>
+                <li><a href="reports.html">📋 Relatórios</a></li>
+                <li id="admin-menu" style="display:none;">
+                    <a href="employees.html">👥 Funcionários</a>
+                </li>
+                <li id="admin-menu2" style="display:none;">
+                    <a href="settings.html">⚙️ Configurações</a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            <!-- HEADER -->
+            <div class="header">
+                <h1>Registrar Ponto</h1>
+                <div class="header-actions">
+                    <div class="user-info">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- CONTENT -->
+            <div id="timeclockContent">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- TIME CLOCK MODAL -->
+    <div id="timeclockModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Registrar Ponto</h2>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Populated -->
+            </div>
+        </div>
+    </div>
+
+    <script src="js/database.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/calculations.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        const user = Auth.getCurrentUser();
+        if (user && user.role === 'admin') {
+            document.getElementById('admin-menu').style.display = 'block';
+            document.getElementById('admin-menu2').style.display = 'block';
+        }
+
+        function loadTimeclock() {
+            const user = Auth.getCurrentUser();
+            
+            if (user.role === 'employee') {
+                loadEmployeeTimeclock();
+            } else {
+                loadAdminTimeclock();
+            }
+        }
+
+        function loadEmployeeTimeclock() {
+            const user = Auth.getCurrentUser();
+            const employee = DB.getEmployeeById(user.employeeId);
+            const today = new Date().toISOString().split('T')[0];
+            const timeLog = DB.getTimeLogByEmployeeAndDate(user.employeeId, today);
+
+            let statusHtml = '';
+            let buttonsHtml = '';
+
+            if (!timeLog) {
+                statusHtml = '<div class="employee-status status-absent">Você ainda não registrou ponto hoje</div>';
+                buttonsHtml = '<button class="btn btn-success" onclick="registerTimeclock(\'entry\')">Registrar Entrada</button>';
+            } else if (timeLog.entryTime && !timeLog.lunchStartTime) {
+                statusHtml = `<div class="employee-status status-present">✓ Entrada registrada às ${timeLog.entryTime}</div>`;
+                buttonsHtml = `
+                    <button class="btn btn-warning" onclick="registerTimeclock('lunchStart')">Saída para Almoço</button>
+                    <button class="btn btn-danger" onclick="registerTimeclock('exit')">Registrar Saída</button>
+                `;
+            } else if (timeLog.lunchStartTime && !timeLog.lunchEndTime) {
+                statusHtml = `<div class="employee-status status-lunch">⏸ Em intervalo desde ${timeLog.lunchStartTime}</div>`;
+                buttonsHtml = '<button class="btn btn-info" onclick="registerTimeclock(\'lunchEnd\')">Volta do Almoço</button>';
+            } else if (timeLog.lunchEndTime && !timeLog.exitTime) {
+                statusHtml = `
+                    <div class="employee-status status-present">✓ Entrada: ${timeLog.entryTime} | Volta: ${timeLog.lunchEndTime}</div>
+                `;
+                buttonsHtml = '<button class="btn btn-danger" onclick="registerTimeclock(\'exit\')">Registrar Saída</button>';
+            } else if (timeLog.exitTime) {
+                statusHtml = `<div class="employee-status status-present">✓ Jornada encerrada às ${timeLog.exitTime}</div>`;
+                const workedHours = (HourCalculations.calculateDailyWorkedHours(timeLog) / 60).toFixed(2);
+                buttonsHtml = `<p style="text-align:center; margin-top:20px; font-size:18px;"><strong>Horas trabalhadas: ${workedHours}h</strong></p>`;
+            }
+
+            document.getElementById('timeclockContent').innerHTML = `
+                <div class="timeclock-container">
+                    <h2>${employee.name}</h2>
+                    <p style="color:#7f8c8d; margin-bottom:20px;">${employee.position} - ${employee.department}</p>
+                    
+                    <div class="time-display" id="currentTime">00:00:00</div>
+                    
+                    ${statusHtml}
+                    
+                    <div class="timeclock-buttons">
+                        ${buttonsHtml}
+                    </div>
+
+                    <div class="card" style="margin-top:30px;">
+                        <div class="card-header">
+                            <h3>Histórico de Hoje</h3>
+                        </div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Evento</th>
+                                        <th>Horário</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${timeLog ? `
+                                        <tr>
+                                            <td>Entrada</td>
+                                            <td>${timeLog.entryTime || '-'}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Saída Almoço</td>
+                                            <td>${timeLog.lunchStartTime || '-'}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Volta Almoço</td>
+                                            <td>${timeLog.lunchEndTime || '-'}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Saída</td>
+                                            <td>${timeLog.exitTime || '-'}</td>
+                                        </tr>
+                                    ` : '<tr><td colspan="2" style="text-align:center;">Nenhum registro</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            updateClock();
+        }
+
+        function loadAdminTimeclock() {
+            const employees = DB.getEmployees();
+            const today = new Date().toISOString().split('T')[0];
+            const todayLogs = DB.getTimeLogs().filter(l => l.date === today);
+
+            document.getElementById('timeclockContent').innerHTML = `
+                <h2>Registros de Ponto - ${formatDate(today)}</h2>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Gerenciar Registros</h3>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Funcionário</th>
+                                    <th>Cargo</th>
+                                    <th>Entrada</th>
+                                    <th>Saída Almoço</th>
+                                    <th>Volta Almoço</th>
+                                    <th>Saída</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminTimeclockTable">
+                                <!-- Populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+
+            populateAdminTimeclockTable(employees, todayLogs);
+        }
+
+        function registerTimeclock(type) {
+            const user = Auth.getCurrentUser();
+            const employee = DB.getEmployeeById(user.employeeId);
+            const today = new Date().toISOString().split('T')[0];
+            const now = new Date();
+            const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            
+            let timeLog = DB.getTimeLogByEmployeeAndDate(user.employeeId, today);
+            
+            if (!timeLog) {
+                timeLog = {
+                    employeeId: user.employeeId,
+                    date: today,
+                    status: 'open'
+                };
+            }
+
+            switch (type) {
+                case 'entry':
+                    timeLog.entryTime = currentTime;
+                    break;
+                case 'lunchStart':
+                    timeLog.lunchStartTime = currentTime;
+                    break;
+                case 'lunchEnd':
+                    timeLog.lunchEndTime = currentTime;
+                    break;
+                case 'exit':
+                    timeLog.exitTime = currentTime;
+                    timeLog.status = 'closed';
+                    break;
+            }
+
+            if (timeLog.id) {
+                DB.updateTimeLog(timeLog.id, timeLog);
+            } else {
+                DB.addTimeLog(timeLog);
+            }
+
+            AppUtils.showSuccess('Ponto registrado com sucesso!');
+            setTimeout(() => {
+                loadEmployeeTimeclock();
+            }, 1000);
+        }
+
+        function populateAdminTimeclockTable(employees, todayLogs) {
+            const tbody = document.getElementById('adminTimeclockTable');
+            
+            tbody.innerHTML = employees.map(emp => {
+                const log = todayLogs.find(l => l.employeeId === emp.id);
+                
+                return `
+                    <tr>
+                        <td>${emp.name}</td>
+                        <td>${emp.position}</td>
+                        <td>${log?.entryTime || '-'}</td>
+                        <td>${log?.lunchStartTime || '-'}</td>
+                        <td>${log?.lunchEndTime || '-'}</td>
+                        <td>${log?.exitTime || '-'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-info" onclick="openEditModal(${emp.id})">Editar</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function openEditModal(employeeId) {
+            const today = new Date().toISOString().split('T')[0];
+            let timeLog = DB.getTimeLogByEmployeeAndDate(employeeId, today);
+            
+            if (!timeLog) {
+                timeLog = {
+                    employeeId: employeeId,
+                    date: today,
+                    entryTime: '',
+                    lunchStartTime: '',
+                    lunchEndTime: '',
+                    exitTime: ''
+                };
+            }
+
+            const employee = DB.getEmployeeById(employeeId);
+            
+            document.getElementById('modalTitle').textContent = `Editar Ponto - ${employee.name}`;
+            document.getElementById('modalBody').innerHTML = `
+                <form onsubmit="saveTimeclock(${employeeId}, event)">
+                    <div class="form-group">
+                        <label for="entryTime">Entrada:</label>
+                        <input type="time" id="entryTime" name="entryTime" value="${timeLog.entryTime || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label for="lunchStartTime">Saída Almoço:</label>
+                        <input type="time" id="lunchStartTime" name="lunchStartTime" value="${timeLog.lunchStartTime || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label for="lunchEndTime">Volta Almoço:</label>
+                        <input type="time" id="lunchEndTime" name="lunchEndTime" value="${timeLog.lunchEndTime || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label for="exitTime">Saída:</label>
+                        <input type="time" id="exitTime" name="exitTime" value="${timeLog.exitTime || ''}">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" onclick="AppUtils.closeModal('timeclockModal')">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+                </form>
+            `;
+            
+            AppUtils.openModal('timeclockModal');
+        }
+
+        function saveTimeclock(employeeId, event) {
+            event.preventDefault();
+            const today = new Date().toISOString().split('T')[0];
+            
+            const formData = {
+                employeeId: employeeId,
+                date: today,
+                entryTime: document.getElementById('entryTime').value || null,
+                lunchStartTime: document.getElementById('lunchStartTime').value || null,
+                lunchEndTime: document.getElementById('lunchEndTime').value || null,
+                exitTime: document.getElementById('exitTime').value || null,
+                status: document.getElementById('exitTime').value ? 'closed' : 'open'
+            };
+
+            let timeLog = DB.getTimeLogByEmployeeAndDate(employeeId, today);
+            
+            if (timeLog) {
+                DB.updateTimeLog(timeLog.id, formData);
+            } else {
+                DB.addTimeLog(formData);
+            }
+
+            AppUtils.closeModal('timeclockModal');
+            AppUtils.showSuccess('Registro atualizado com sucesso!');
+            loadAdminTimeclock();
+        }
+
+        function updateClock() {
+            const updateTime = () => {
+                const now = new Date();
+                const timeElement = document.getElementById('currentTime');
+                if (timeElement) {
+                    timeElement.textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+                }
+            };
+
+            updateTime();
+            setInterval(updateTime, 1000);
+        }
+
+        window.addEventListener('load', loadTimeclock);
+    </script>
+</body>
+</html>

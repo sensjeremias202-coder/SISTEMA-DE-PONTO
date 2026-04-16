@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Horas - Sistema de Ponto</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>🕐 Sistema Ponto</h2>
+                <p>Controle de Frequência</p>
+            </div>
+            <ul class="sidebar-nav">
+                <li><a href="dashboard.html">📊 Dashboard</a></li>
+                <li><a href="timeclock.html">🕒 Registrar Ponto</a></li>
+                <li><a href="manage-hours.html" class="active">⏱️ Gerenciar Horas</a></li>
+                <li><a href="reports.html">📋 Relatórios</a></li>
+                <li id="admin-menu" style="display:none;">
+                    <a href="employees.html">👥 Funcionários</a>
+                </li>
+                <li id="admin-menu2" style="display:none;">
+                    <a href="settings.html">⚙️ Configurações</a>
+                </li>
+                <li id="admin-menu3" style="display:none;">
+                    <a href="audit.html">🔐 Auditoria</a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            <!-- HEADER -->
+            <div class="header">
+                <h1>⏱️ Gerenciar Horas</h1>
+                <div class="header-actions">
+                    <div class="user-info">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- FILTERS AND OPTIONS -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Selecione um Funcionário</h2>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="employeeSelect">Funcionário:</label>
+                        <select id="employeeSelect" onchange="loadEmployeeHours()">
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="monthSelect">Mês/Ano:</label>
+                        <input type="month" id="monthSelect" onchange="loadEmployeeHours()">
+                    </div>
+                    <div class="form-group" style="padding-top: 32px;">
+                        <button class="btn btn-success" onclick="openAddHourModal()">+ Adicionar Hora</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EMPLOYEE INFO -->
+            <div id="employeeInfo" style="display:none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Informações do Funcionário</h2>
+                    </div>
+                    <table style="width:100%;">
+                        <tr>
+                            <td style="padding:10px;"><strong>Nome:</strong></td>
+                            <td id="empName" style="padding:10px;"></td>
+                            <td style="padding:10px;"><strong>Cargo:</strong></td>
+                            <td id="empPosition" style="padding:10px;"></td>
+                        </tr>
+                        <tr style="background:#f0f0f0;">
+                            <td style="padding:10px;"><strong>Departamento:</strong></td>
+                            <td id="empDept" style="padding:10px;"></td>
+                            <td style="padding:10px;"><strong>Jornada Mensal:</strong></td>
+                            <td id="empMonthly" style="padding:10px;"></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- MONTHLY SUMMARY -->
+                <div class="dashboard-grid" style="margin-top:20px;">
+                    <div class="stat-card blue">
+                        <div class="stat-label">Horas Trabalhadas</div>
+                        <div class="stat-value" id="totalWorked">0h</div>
+                    </div>
+                    <div class="stat-card teal">
+                        <div class="stat-label">Jornada Esperada</div>
+                        <div class="stat-value" id="expectedHours">0h</div>
+                    </div>
+                    <div class="stat-card green" id="balanceCard">
+                        <div class="stat-label">Saldo</div>
+                        <div class="stat-value" id="balance">0h</div>
+                    </div>
+                    <div class="stat-card orange">
+                        <div class="stat-label">Dias Presentes</div>
+                        <div class="stat-value" id="daysPresent">0</div>
+                    </div>
+                </div>
+
+                <!-- HOURS TABLE -->
+                <div class="card" style="margin-top:20px;">
+                    <div class="card-header">
+                        <h2>Registro de Horas</h2>
+                        <button class="btn btn-sm btn-info" onclick="printMonthlyReport()">🖨️ Imprimir</button>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Dia da Semana</th>
+                                    <th>Entrada</th>
+                                    <th>Saída Almoço</th>
+                                    <th>Volta Almoço</th>
+                                    <th>Saída</th>
+                                    <th>Horas</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="hoursTable">
+                                <!-- Populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD/EDIT HOUR MODAL -->
+    <div id="hourModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Adicionar Hora</h2>
+                <button class="close-btn">&times;</button>
+            </div>
+            <form id="hourForm" onsubmit="saveHour(event)">
+                <div class="form-group">
+                    <label for="hourDate">Data:</label>
+                    <input type="date" id="hourDate" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="entryTime">Entrada (HH:MM):</label>
+                        <input type="time" id="entryTime" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="lunchStartTime">Saída Almoço (HH:MM):</label>
+                        <input type="time" id="lunchStartTime">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="lunchEndTime">Volta Almoço (HH:MM):</label>
+                        <input type="time" id="lunchEndTime">
+                    </div>
+                    <div class="form-group">
+                        <label for="exitTime">Saída (HH:MM):</label>
+                        <input type="time" id="exitTime" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="notes">Observações:</label>
+                    <textarea id="notes" placeholder="Atraso justificado, feriado prolongado, etc."></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="AppUtils.closeModal('hourModal')">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="deleteBtn" style="display:none;" onclick="deleteHour()">Deletar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/database.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/calculations.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        let currentEmployeeId = null;
+        let currentTimeLogId = null;
+
+        function initialize() {
+            const user = Auth.getCurrentUser();
+            if (user && user.role === 'admin') {
+                document.getElementById('admin-menu').style.display = 'block';
+                document.getElementById('admin-menu2').style.display = 'block';
+                document.getElementById('admin-menu3').style.display = 'block';
+            }
+
+            // Load employees into select
+            const employees = DB.getEmployees();
+            const select = document.getElementById('employeeSelect');
+            employees.forEach(emp => {
+                const option = document.createElement('option');
+                option.value = emp.id;
+                option.text = emp.name;
+                select.appendChild(option);
+            });
+
+            // Set current month
+            const today = new Date();
+            document.getElementById('monthSelect').value = 
+                `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+        }
+
+        function loadEmployeeHours() {
+            const empId = parseInt(document.getElementById('employeeSelect').value);
+            const monthStr = document.getElementById('monthSelect').value;
+
+            if (!empId || !monthStr) {
+                document.getElementById('employeeInfo').style.display = 'none';
+                return;
+            }
+
+            currentEmployeeId = empId;
+            const employee = DB.getEmployeeById(empId);
+            
+            // Show employee info
+            document.getElementById('employeeInfo').style.display = 'block';
+            document.getElementById('empName').textContent = employee.name;
+            document.getElementById('empPosition').textContent = employee.position;
+            document.getElementById('empDept').textContent = employee.department;
+            document.getElementById('empMonthly').textContent = employee.monthlyHours + 'h';
+
+            // Get dates for the month
+            const [year, month] = monthStr.split('-');
+            const startDate = `${year}-${month}-01`;
+            const endDate = `${year}-${month}-${new Date(year, month, 0).getDate()}`;
+
+            // Calculate totals
+            const timeLogs = DB.getTimeLogsByEmployee(empId, startDate, endDate);
+            let totalWorked = 0;
+            let daysPresent = 0;
+
+            timeLogs.forEach(log => {
+                if (log.status === 'closed' || (log.entryTime && log.exitTime)) {
+                    totalWorked += HourCalculations.calculateDailyWorkedHours(log);
+                    daysPresent++;
+                }
+            });
+
+            const totalWorkedHours = (totalWorked / 60).toFixed(2);
+            const balance = (totalWorkedHours - employee.monthlyHours).toFixed(2);
+
+            document.getElementById('totalWorked').textContent = totalWorkedHours + 'h';
+            document.getElementById('expectedHours').textContent = employee.monthlyHours + 'h';
+            document.getElementById('balance').textContent = (balance >= 0 ? '+' : '') + balance + 'h';
+            document.getElementById('daysPresent').textContent = daysPresent;
+
+            // Color balance card
+            const balanceCard = document.getElementById('balanceCard');
+            if (parseFloat(balance) > 0) {
+                balanceCard.className = 'stat-card green';
+            } else if (parseFloat(balance) < 0) {
+                balanceCard.className = 'stat-card red';
+            } else {
+                balanceCard.className = 'stat-card teal';
+            }
+
+            // Populate hours table
+            populateHoursTable(timeLogs, empId);
+        }
+
+        function populateHoursTable(timeLogs, empId) {
+            const tbody = document.getElementById('hoursTable');
+            
+            if (timeLogs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Nenhum registro neste período</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = timeLogs.map(log => {
+                const date = new Date(log.date);
+                const dayOfWeek = date.toLocaleDateString('pt-BR', { weekday: 'long' });
+                const workedHours = (HourCalculations.calculateDailyWorkedHours(log) / 60).toFixed(2);
+                const status = log.status === 'closed' ? 'Fechado' : 'Aberto';
+                const statusClass = log.status === 'closed' ? 'badge-success' : 'badge-info';
+
+                return `<tr>
+                    <td>${formatDate(log.date)}</td>
+                    <td>${dayOfWeek}</td>
+                    <td>${log.entryTime || '-'}</td>
+                    <td>${log.lunchStartTime || '-'}</td>
+                    <td>${log.lunchEndTime || '-'}</td>
+                    <td>${log.exitTime || '-'}</td>
+                    <td><strong>${workedHours}h</strong></td>
+                    <td><span class="badge ${statusClass}">${status}</span></td>
+                    <td>
+                        <div class="table-actions">
+                            <button class="btn btn-sm btn-info" onclick="openEditHourModal(${log.id})">Editar</button>
+                            <button class="btn btn-sm btn-danger" onclick="confirmDeleteHour(${log.id})">Deletar</button>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function openAddHourModal() {
+            if (!currentEmployeeId) {
+                AppUtils.showError('Selecione um funcionário primeiro');
+                return;
+            }
+
+            currentTimeLogId = null;
+            document.getElementById('modalTitle').textContent = 'Adicionar Hora';
+            document.getElementById('hourForm').reset();
+            document.getElementById('deleteBtn').style.display = 'none';
+
+            // Set today's date by default
+            const today = new Date();
+            document.getElementById('hourDate').value = today.toISOString().split('T')[0];
+
+            AppUtils.openModal('hourModal');
+        }
+
+        function openEditHourModal(timeLogId) {
+            currentTimeLogId = timeLogId;
+            const timeLogs = DB.getTimeLogs();
+            const timeLog = timeLogs.find(t => t.id === timeLogId);
+
+            if (!timeLog) return;
+
+            document.getElementById('modalTitle').textContent = 'Editar Hora';
+            document.getElementById('hourDate').value = timeLog.date;
+            document.getElementById('entryTime').value = timeLog.entryTime || '';
+            document.getElementById('lunchStartTime').value = timeLog.lunchStartTime || '';
+            document.getElementById('lunchEndTime').value = timeLog.lunchEndTime || '';
+            document.getElementById('exitTime').value = timeLog.exitTime || '';
+            document.getElementById('notes').value = timeLog.notes || '';
+            document.getElementById('deleteBtn').style.display = 'inline-block';
+
+            AppUtils.openModal('hourModal');
+        }
+
+        function saveHour(event) {
+            event.preventDefault();
+
+            if (!currentEmployeeId) {
+                AppUtils.showError('Funcionário não selecionado');
+                return;
+            }
+
+            const formData = {
+                employeeId: currentEmployeeId,
+                date: document.getElementById('hourDate').value,
+                entryTime: document.getElementById('entryTime').value,
+                lunchStartTime: document.getElementById('lunchStartTime').value || null,
+                lunchEndTime: document.getElementById('lunchEndTime').value || null,
+                exitTime: document.getElementById('exitTime').value,
+                status: document.getElementById('exitTime').value ? 'closed' : 'open',
+                notes: document.getElementById('notes').value
+            };
+
+            if (currentTimeLogId) {
+                // Edit existing
+                DB.updateTimeLog(currentTimeLogId, formData);
+                AppUtils.showSuccess('Hora atualizada com sucesso!');
+            } else {
+                // Add new
+                DB.addTimeLog(formData);
+                AppUtils.showSuccess('Hora adicionada com sucesso!');
+            }
+
+            AppUtils.closeModal('hourModal');
+            loadEmployeeHours();
+        }
+
+        function confirmDeleteHour(timeLogId) {
+            if (confirm('Deseja realmente deletar este registro de hora?')) {
+                deleteHourConfirmed(timeLogId);
+            }
+        }
+
+        function deleteHour() {
+            if (currentTimeLogId && confirm('Deseja realmente deletar este registro?')) {
+                deleteHourConfirmed(currentTimeLogId);
+                AppUtils.closeModal('hourModal');
+            }
+        }
+
+        function deleteHourConfirmed(timeLogId) {
+            const timeLogs = DB.getTimeLogs();
+            const index = timeLogs.findIndex(t => t.id === timeLogId);
+            if (index !== -1) {
+                timeLogs.splice(index, 1);
+                localStorage.setItem(DB.dbName + '_timelogs', JSON.stringify(timeLogs));
+                DB.addAuditLog('DELETE', 'timelogs', timeLogId, 'Registro de hora deletado');
+                AppUtils.showSuccess('Registro deletado com sucesso!');
+                loadEmployeeHours();
+            }
+        }
+
+        function printMonthlyReport() {
+            if (!currentEmployeeId) {
+                AppUtils.showError('Selecione um funcionário');
+                return;
+            }
+
+            const employee = DB.getEmployeeById(currentEmployeeId);
+            const monthStr = document.getElementById('monthSelect').value;
+            const timeLogs = DB.getTimeLogsByEmployee(currentEmployeeId);
+
+            let html = `
+                <div style="font-family: Arial; padding: 20px;">
+                    <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px;">
+                        <h1 style="margin: 0;">FOLHA DE FREQUÊNCIA</h1>
+                        <p style="margin: 5px 0;">${employee.name}</p>
+                        <p style="margin: 5px 0;"><strong>Cargo:</strong> ${employee.position} | <strong>Depto:</strong> ${employee.department}</p>
+                        <p style="margin: 5px 0;"><strong>Período:</strong> ${monthStr}</p>
+                    </div>
+
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                        <thead>
+                            <tr style="background: #f0f0f0; border: 1px solid #999;">
+                                <th style="padding: 8px; border: 1px solid #999; text-align: left;">Data</th>
+                                <th style="padding: 8px; border: 1px solid #999; text-align: center;">Entrada</th>
+                                <th style="padding: 8px; border: 1px solid #999; text-align: center;">Saída Alm.</th>
+                                <th style="padding: 8px; border: 1px solid #999; text-align: center;">Volta Alm.</th>
+                                <th style="padding: 8px; border: 1px solid #999; text-align: center;">Saída</th>
+                                <th style="padding: 8px; border: 1px solid #999; text-align: center;">Horas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            const [year, month] = monthStr.split('-');
+            const startDate = `${year}-${month}-01`;
+            const endDate = `${year}-${month}-${new Date(year, month, 0).getDate()}`;
+            const monthLogs = timeLogs.filter(l => l.date >= startDate && l.date <= endDate);
+
+            let totalHours = 0;
+            monthLogs.forEach(log => {
+                const hours = (HourCalculations.calculateDailyWorkedHours(log) / 60).toFixed(2);
+                totalHours += parseFloat(hours);
+
+                html += `
+                    <tr style="border: 1px solid #999;">
+                        <td style="padding: 8px; border: 1px solid #999;">${formatDate(log.date)}</td>
+                        <td style="padding: 8px; border: 1px solid #999; text-align: center;">${log.entryTime || '-'}</td>
+                        <td style="padding: 8px; border: 1px solid #999; text-align: center;">${log.lunchStartTime || '-'}</td>
+                        <td style="padding: 8px; border: 1px solid #999; text-align: center;">${log.lunchEndTime || '-'}</td>
+                        <td style="padding: 8px; border: 1px solid #999; text-align: center;">${log.exitTime || '-'}</td>
+                        <td style="padding: 8px; border: 1px solid #999; text-align: center;"><strong>${hours}h</strong></td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                    <tr style="background: #f0f0f0; border: 1px solid #999; font-weight: bold;">
+                        <td colspan="5" style="padding: 8px; border: 1px solid #999; text-align: right;">TOTAL:</td>
+                        <td style="padding: 8px; border: 1px solid #999; text-align: center;">${totalHours.toFixed(2)}h</td>
+                    </tr>
+                </tbody>
+                    </table>
+
+                    <div style="margin-top: 40px; display: flex; justify-content: space-around;">
+                        <div style="text-align: center;">
+                            <p style="margin-bottom: 50px;">_____________________</p>
+                            <p>Assinatura do Funcionário</p>
+                        </div>
+                        <div style="text-align: center;">
+                            <p style="margin-bottom: 50px;">_____________________</p>
+                            <p>Assinatura do Gestor</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            AppUtils.exportToPDF(html, `folha_frequencia_${employee.name.replace(/\s+/g, '_')}_${monthStr}`);
+        }
+
+        window.addEventListener('load', initialize);
+    </script>
+</body>
+</html>

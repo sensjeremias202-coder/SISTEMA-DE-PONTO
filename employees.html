@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Funcionários - Sistema de Ponto</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>🕐 Sistema Ponto</h2>
+                <p>Controle de Frequência</p>
+            </div>
+            <ul class="sidebar-nav">
+                <li><a href="dashboard.html">📊 Dashboard</a></li>
+                <li><a href="timeclock.html">🕒 Registrar Ponto</a></li>
+                <li><a href="manage-hours.html">⏱️ Gerenciar Horas</a></li>
+                <li><a href="reports.html">📋 Relatórios</a></li>
+                <li><a href="employees.html" class="active">👥 Funcionários</a></li>
+                <li><a href="settings.html">⚙️ Configurações</a></li>
+                <li><a href="audit.html">🔐 Auditoria</a></li>
+            </ul>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            <!-- HEADER -->
+            <div class="header">
+                <h1>Gerenciamento de Funcionários</h1>
+                <div class="header-actions">
+                    <button class="btn btn-success" onclick="openAddEmployeeModal()">+ Novo Funcionário</button>
+                    <div class="user-info">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- CONTENT -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Lista de Funcionários</h2>
+                    <div>
+                        <input type="text" id="searchInput" placeholder="Buscar por nome..." style="padding:8px; border:1px solid #ddd; border-radius:4px; width:200px;">
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Email</th>
+                                <th>CPF</th>
+                                <th>Cargo</th>
+                                <th>Departamento</th>
+                                <th>Jornada/Mês</th>
+                                <th>Valor/Hora</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employeesTable">
+                            <!-- Populated -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EMPLOYEE MODAL -->
+    <div id="employeeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Novo Funcionário</h2>
+                <button class="close-btn">&times;</button>
+            </div>
+            <form id="employeeForm" onsubmit="saveEmployee(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="empName">Nome Completo:</label>
+                        <input type="text" id="empName" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="empEmail">Email:</label>
+                        <input type="email" id="empEmail" name="email" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="empCPF">CPF:</label>
+                        <input type="text" id="empCPF" name="cpf" placeholder="000.000.000-00" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="empPosition">Cargo:</label>
+                        <input type="text" id="empPosition" name="position" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="empDepartment">Departamento:</label>
+                        <select id="empDepartment" name="department" required>
+                            <option value="">Selecione...</option>
+                            <option value="TI">TI</option>
+                            <option value="RH">RH</option>
+                            <option value="Vendas">Vendas</option>
+                            <option value="Gestão">Gestão</option>
+                            <option value="Financeiro">Financeiro</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="empMonthlyHours">Jornada Mensal (horas):</label>
+                        <input type="number" id="empMonthlyHours" name="monthlyHours" value="176" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="empHourlyRate">Valor da Hora (R$):</label>
+                        <input type="number" id="empHourlyRate" name="hourlyRate" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="empContract">Tipo de Contrato:</label>
+                        <select id="empContract" name="contract">
+                            <option value="CLT">CLT</option>
+                            <option value="PJ">PJ</option>
+                            <option value="Estágio">Estágio</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="empBankAccount">Conta Bancária:</label>
+                        <input type="text" id="empBankAccount" name="bankAccount" placeholder="12345-6">
+                    </div>
+                    <div class="form-group">
+                        <label for="empRegistration">Matrícula:</label>
+                        <input type="text" id="empRegistration" name="registrationNumber" placeholder="E001">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="empStatus">Status:</label>
+                    <select id="empStatus" name="status">
+                        <option value="ativo">Ativo</option>
+                        <option value="inativo">Inativo</option>
+                        <option value="afastado">Afastado</option>
+                    </select>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="AppUtils.closeModal('employeeModal')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/database.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/calculations.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        let currentEmployeeId = null;
+
+        function loadEmployees() {
+            Auth.canAccess('admin');
+            const employees = DB.getEmployees();
+            populateEmployeesTable(employees);
+
+            // Search functionality
+            document.getElementById('searchInput').addEventListener('keyup', function(e) {
+                const searchTerm = e.target.value.toLowerCase();
+                const filtered = employees.filter(emp => 
+                    emp.name.toLowerCase().includes(searchTerm) ||
+                    emp.email.toLowerCase().includes(searchTerm) ||
+                    emp.cpf.includes(searchTerm)
+                );
+                populateEmployeesTable(filtered);
+            });
+        }
+
+        function populateEmployeesTable(employees) {
+            const tbody = document.getElementById('employeesTable');
+            
+            tbody.innerHTML = employees.map(emp => `
+                <tr>
+                    <td>${emp.id}</td>
+                    <td>${emp.name}</td>
+                    <td>${emp.email}</td>
+                    <td>${emp.cpf}</td>
+                    <td>${emp.position}</td>
+                    <td>${emp.department}</td>
+                    <td>${emp.monthlyHours}h</td>
+                    <td>${formatCurrency(emp.hourlyRate)}</td>
+                    <td>
+                        <span class="badge ${emp.status === 'ativo' ? 'badge-success' : 'badge-danger'}">
+                            ${emp.status === 'ativo' ? 'Ativo' : 'Inativo'}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="table-actions">
+                            <button class="btn btn-sm btn-info" onclick="openEditEmployeeModal(${emp.id})">Editar</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteEmployee(${emp.id})">Deletar</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openAddEmployeeModal() {
+            currentEmployeeId = null;
+            document.getElementById('modalTitle').textContent = 'Novo Funcionário';
+            document.getElementById('employeeForm').reset();
+            document.getElementById('empMonthlyHours').value = '176';
+            document.getElementById('empContract').value = 'CLT';
+            document.getElementById('empStatus').value = 'ativo';
+            AppUtils.openModal('employeeModal');
+        }
+
+        function openEditEmployeeModal(employeeId) {
+            currentEmployeeId = employeeId;
+            const employee = DB.getEmployeeById(employeeId);
+            
+            document.getElementById('modalTitle').textContent = 'Editar Funcionário';
+            document.getElementById('empName').value = employee.name;
+            document.getElementById('empEmail').value = employee.email;
+            document.getElementById('empCPF').value = employee.cpf;
+            document.getElementById('empPosition').value = employee.position;
+            document.getElementById('empDepartment').value = employee.department;
+            document.getElementById('empMonthlyHours').value = employee.monthlyHours;
+            document.getElementById('empHourlyRate').value = employee.hourlyRate;
+            document.getElementById('empContract').value = employee.contract;
+            document.getElementById('empBankAccount').value = employee.bankAccount;
+            document.getElementById('empRegistration').value = employee.registrationNumber;
+            document.getElementById('empStatus').value = employee.status;
+            
+            AppUtils.openModal('employeeModal');
+        }
+
+        function saveEmployee(event) {
+            event.preventDefault();
+            
+            const formData = {
+                name: document.getElementById('empName').value,
+                email: document.getElementById('empEmail').value,
+                cpf: document.getElementById('empCPF').value,
+                position: document.getElementById('empPosition').value,
+                department: document.getElementById('empDepartment').value,
+                monthlyHours: parseInt(document.getElementById('empMonthlyHours').value),
+                hourlyRate: parseFloat(document.getElementById('empHourlyRate').value),
+                contract: document.getElementById('empContract').value,
+                bankAccount: document.getElementById('empBankAccount').value,
+                registrationNumber: document.getElementById('empRegistration').value,
+                status: document.getElementById('empStatus').value
+            };
+
+            if (currentEmployeeId) {
+                DB.updateEmployee(currentEmployeeId, formData);
+                AppUtils.showSuccess('Funcionário atualizado com sucesso!');
+            } else {
+                DB.addEmployee(formData);
+                AppUtils.showSuccess('Funcionário adicionado com sucesso!');
+            }
+
+            AppUtils.closeModal('employeeModal');
+            loadEmployees();
+        }
+
+        function deleteEmployee(employeeId) {
+            if (confirm('Deseja realmente deletar este funcionário?')) {
+                const employees = DB.getEmployees();
+                const index = employees.findIndex(e => e.id === employeeId);
+                if (index !== -1) {
+                    employees.splice(index, 1);
+                    localStorage.setItem(DB.dbName + '_employees', JSON.stringify(employees));
+                    DB.addAuditLog('DELETE', 'employees', employeeId, 'Funcionário deletado');
+                    AppUtils.showSuccess('Funcionário deletado com sucesso!');
+                    loadEmployees();
+                }
+            }
+        }
+
+        window.addEventListener('load', loadEmployees);
+    </script>
+</body>
+</html>

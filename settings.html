@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurações - Sistema de Ponto</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>🕐 Sistema Ponto</h2>
+                <p>Controle de Frequência</p>
+            </div>
+            <ul class="sidebar-nav">
+                <li><a href="dashboard.html">📊 Dashboard</a></li>
+                <li><a href="timeclock.html">🕒 Registrar Ponto</a></li>
+                <li><a href="manage-hours.html">⏱️ Gerenciar Horas</a></li>
+                <li><a href="reports.html">📋 Relatórios</a></li>
+                <li><a href="employees.html">👥 Funcionários</a></li>
+                <li><a href="settings.html" class="active">⚙️ Configurações</a></li>
+                <li><a href="audit.html">🔐 Auditoria</a></li>
+            </ul>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            <!-- HEADER -->
+            <div class="header">
+                <h1>Configurações do Sistema</h1>
+                <div class="header-actions">
+                    <div class="user-info">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABS -->
+            <div style="margin-bottom: 20px; border-bottom: 1px solid #ddd;">
+                <button class="tab-btn active" onclick="switchTab('company')" style="padding:10px 20px; background:none; border:none; cursor:pointer; border-bottom:3px solid #3498db;">
+                    Dados da Empresa
+                </button>
+                <button class="tab-btn" onclick="switchTab('system')" style="padding:10px 20px; background:none; border:none; cursor:pointer; border-bottom:3px solid transparent;">
+                    Sistema
+                </button>
+                <button class="tab-btn" onclick="switchTab('users')" style="padding:10px 20px; background:none; border:none; cursor:pointer; border-bottom:3px solid transparent;">
+                    Usuários
+                </button>
+            </div>
+
+            <!-- TAB 1: COMPANY -->
+            <div id="company-tab" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Dados da Empresa</h2>
+                    </div>
+                    <form id="companyForm" onsubmit="saveCompanySettings(event)">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="companyName">Nome da Empresa:</label>
+                                <input type="text" id="companyName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="companyCNPJ">CNPJ:</label>
+                                <input type="text" id="companyCNPJ" placeholder="00.000.000/0000-00" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="companyAddress">Endereço:</label>
+                                <input type="text" id="companyAddress">
+                            </div>
+                            <div class="form-group">
+                                <label for="companyPhone">Telefone:</label>
+                                <input type="tel" id="companyPhone">
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- TAB 2: SYSTEM -->
+            <div id="system-tab" class="tab-content" style="display:none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Configurações de Sistema</h2>
+                    </div>
+                    <form id="systemForm" onsubmit="saveSystemSettings(event)">
+                        <h3 style="margin-top:20px; margin-bottom:10px;">Tolerância e Horários</h3>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="tolerance">Tolerância (minutos):</label>
+                                <input type="number" id="tolerance" min="0" max="60" required>
+                                <small>Variação permitida sem descontar/contar como extra</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="startDate">Início de Período (dia):</label>
+                                <input type="number" id="startDate" min="1" max="31" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="endDate">Fim de Período (dia):</label>
+                                <input type="number" id="endDate" min="1" max="31" required>
+                            </div>
+                        </div>
+
+                        <h3 style="margin-top:20px; margin-bottom:10px;">Cálculo de Horas Extras</h3>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="overtimeMultiplier">Extras em Dias Úteis (%):</label>
+                                <select id="overtimeMultiplier" required>
+                                    <option value="1.5">50% (1.5x)</option>
+                                    <option value="2.0">100% (2.0x)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="holidayMultiplier">Extras em Feriado/Domingo (%):</label>
+                                <select id="holidayMultiplier" required>
+                                    <option value="2.0">100% (2.0x)</option>
+                                    <option value="3.0">200% (3.0x)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <h3 style="margin-top:20px; margin-bottom:10px;">Banco de Horas</h3>
+                        
+                        <div class="form-group">
+                            <label for="useHourBank">
+                                <input type="checkbox" id="useHourBank"> 
+                                Usar Banco de Horas (ao invés de pagamento imediato)
+                            </label>
+                        </div>
+
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- TAB 3: USERS -->
+            <div id="users-tab" class="tab-content" style="display:none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Gerenciamento de Usuários</h2>
+                        <button class="btn btn-success" onclick="openAddUserModal()" style="float:right;">+ Novo Usuário</button>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Email</th>
+                                    <th>Função</th>
+                                    <th>Departamento</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTable">
+                                <!-- Populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top:20px;">
+                    <div class="card-header">
+                        <h2>Backup e Dados</h2>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-info" onclick="exportAllData()">📥 Exportar Dados (JSON)</button>
+                        <button class="btn btn-danger" onclick="clearAllData()">🗑️ Limpar Todos os Dados</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- USER MODAL -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Novo Usuário</h2>
+                <button class="close-btn">&times;</button>
+            </div>
+            <form id="userForm" onsubmit="saveUser(event)">
+                <div class="form-group">
+                    <label for="userName">Nome:</label>
+                    <input type="text" id="userName" required>
+                </div>
+                <div class="form-group">
+                    <label for="userEmail">Email:</label>
+                    <input type="email" id="userEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="userPassword">Senha:</label>
+                    <input type="password" id="userPassword" required>
+                </div>
+                <div class="form-group">
+                    <label for="userRole">Função:</label>
+                    <select id="userRole" required>
+                        <option value="employee">Funcionário</option>
+                        <option value="manager">Gestor</option>
+                        <option value="admin">Administrador RH</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="userDepartment">Departamento:</label>
+                    <input type="text" id="userDepartment">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="AppUtils.closeModal('userModal')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/database.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/calculations.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
+            document.getElementById(tabName + '-tab').style.display = 'block';
+            
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.style.borderBottomColor = 'transparent';
+            });
+            event.target.style.borderBottomColor = '#3498db';
+        }
+
+        function loadSettings() {
+            Auth.canAccess('admin');
+            const settings = DB.getSettings();
+
+            // Company tab
+            document.getElementById('companyName').value = settings.companyName || '';
+            document.getElementById('companyCNPJ').value = settings.cnpj || '';
+            document.getElementById('companyAddress').value = settings.address || '';
+            document.getElementById('companyPhone').value = settings.phone || '';
+
+            // System tab
+            document.getElementById('tolerance').value = settings.tolerance || 10;
+            document.getElementById('startDate').value = settings.startDate || '01';
+            document.getElementById('endDate').value = settings.endDate || '15';
+            document.getElementById('overtimeMultiplier').value = settings.overtimeMultiplier || 1.5;
+            document.getElementById('holidayMultiplier').value = settings.holidayMultiplier || 2.0;
+            document.getElementById('useHourBank').checked = settings.useHourBank !== false;
+
+            // Users tab
+            loadUsersTable();
+        }
+
+        function loadUsersTable() {
+            const users = DB.getUsers();
+            const tbody = document.getElementById('usersTable');
+            
+            tbody.innerHTML = users.map(user => `
+                <tr>
+                    <td>${user.name}</td>
+                    <td>${user.email}</td>
+                    <td>${AppUtils.getRoleLabel(user.role)}</td>
+                    <td>${user.department || '-'}</td>
+                    <td>
+                        <div class="table-actions">
+                            <button class="btn btn-sm btn-info" onclick="editUser(${user.id})">Editar</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.id})">Deletar</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function saveCompanySettings(event) {
+            event.preventDefault();
+            const settings = DB.getSettings();
+            
+            settings.companyName = document.getElementById('companyName').value;
+            settings.cnpj = document.getElementById('companyCNPJ').value;
+            settings.address = document.getElementById('companyAddress').value;
+            settings.phone = document.getElementById('companyPhone').value;
+
+            DB.updateSettings(settings);
+            AppUtils.showSuccess('Configurações da empresa salvas com sucesso!');
+        }
+
+        function saveSystemSettings(event) {
+            event.preventDefault();
+            const settings = DB.getSettings();
+            
+            settings.tolerance = parseInt(document.getElementById('tolerance').value);
+            settings.startDate = document.getElementById('startDate').value;
+            settings.endDate = document.getElementById('endDate').value;
+            settings.overtimeMultiplier = parseFloat(document.getElementById('overtimeMultiplier').value);
+            settings.holidayMultiplier = parseFloat(document.getElementById('holidayMultiplier').value);
+            settings.useHourBank = document.getElementById('useHourBank').checked;
+
+            DB.updateSettings(settings);
+            AppUtils.showSuccess('Configurações do sistema salvas com sucesso!');
+        }
+
+        function openAddUserModal() {
+            document.getElementById('userForm').reset();
+            AppUtils.openModal('userModal');
+        }
+
+        function editUser(userId) {
+            const user = DB.getUserById(userId);
+            document.getElementById('userName').value = user.name;
+            document.getElementById('userEmail').value = user.email;
+            document.getElementById('userPassword').value = user.password;
+            document.getElementById('userRole').value = user.role;
+            document.getElementById('userDepartment').value = user.department || '';
+            AppUtils.openModal('userModal');
+        }
+
+        function saveUser(event) {
+            event.preventDefault();
+            const users = DB.getUsers();
+            const newUser = {
+                id: users.length + 1,
+                name: document.getElementById('userName').value,
+                email: document.getElementById('userEmail').value,
+                password: document.getElementById('userPassword').value,
+                role: document.getElementById('userRole').value,
+                department: document.getElementById('userDepartment').value,
+                createdAt: new Date().toISOString()
+            };
+
+            users.push(newUser);
+            localStorage.setItem(DB.dbName + '_users', JSON.stringify(users));
+            DB.addAuditLog('CREATE', 'users', newUser.id, `Usuário ${newUser.email} criado`);
+
+            AppUtils.closeModal('userModal');
+            AppUtils.showSuccess('Usuário adicionado com sucesso!');
+            loadUsersTable();
+        }
+
+        function deleteUser(userId) {
+            if (confirm('Deseja realmente deletar este usuário?')) {
+                const users = DB.getUsers();
+                const index = users.findIndex(u => u.id === userId);
+                if (index !== -1) {
+                    users.splice(index, 1);
+                    localStorage.setItem(DB.dbName + '_users', JSON.stringify(users));
+                    DB.addAuditLog('DELETE', 'users', userId, 'Usuário deletado');
+                    AppUtils.showSuccess('Usuário deletado com sucesso!');
+                    loadUsersTable();
+                }
+            }
+        }
+
+        function exportAllData() {
+            const data = DB.exportData();
+            const jsonStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'backup_sistema_ponto_' + new Date().getTime() + '.json';
+            link.click();
+            window.URL.revokeObjectURL(url);
+            AppUtils.showSuccess('Backup exportado com sucesso!');
+        }
+
+        function clearAllData() {
+            if (confirm('⚠️ ATENÇÃO! Isto irá deletar TODOS os dados do sistema. Deseja continuar?')) {
+                if (confirm('Tem certeza? Esta ação não pode ser desfeita!')) {
+                    DB.clearAllData();
+                    AppUtils.showSuccess('Todos os dados foram limpos!');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 2000);
+                }
+            }
+        }
+
+        window.addEventListener('load', loadSettings);
+    </script>
+</body>
+</html>

@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auditoria - Sistema de Ponto</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>🕐 Sistema Ponto</h2>
+                <p>Controle de Frequência</p>
+            </div>
+            <ul class="sidebar-nav">
+                <li><a href="dashboard.html">📊 Dashboard</a></li>
+                <li><a href="timeclock.html">🕒 Registrar Ponto</a></li>
+                <li><a href="manage-hours.html">⏱️ Gerenciar Horas</a></li>
+                <li><a href="reports.html">📋 Relatórios</a></li>
+                <li><a href="employees.html">👥 Funcionários</a></li>
+                <li><a href="settings.html">⚙️ Configurações</a></li>
+                <li><a href="audit.html" class="active">🔐 Auditoria</a></li>
+            </ul>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            <!-- HEADER -->
+            <div class="header">
+                <h1>Trilha de Auditoria</h1>
+                <div class="header-actions">
+                    <div class="user-info">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- FILTERS -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Filtros</h2>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="filterAction">Ação:</label>
+                        <select id="filterAction" onchange="applyFilters()">
+                            <option value="">Todas</option>
+                            <option value="LOGIN">Login</option>
+                            <option value="LOGOUT">Logout</option>
+                            <option value="CREATE">Criação</option>
+                            <option value="UPDATE">Atualização</option>
+                            <option value="DELETE">Exclusão</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="filterTable">Tabela:</label>
+                        <select id="filterTable" onchange="applyFilters()">
+                            <option value="">Todas</option>
+                            <option value="users">Usuários</option>
+                            <option value="employees">Funcionários</option>
+                            <option value="timelogs">Registros de Ponto</option>
+                            <option value="closures">Fechamentos</option>
+                            <option value="settings">Configurações</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="filterStartDate">Data Inicial:</label>
+                        <input type="date" id="filterStartDate" onchange="applyFilters()">
+                    </div>
+                    <div class="form-group">
+                        <label for="filterEndDate">Data Final:</label>
+                        <input type="date" id="filterEndDate" onchange="applyFilters()">
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-secondary" onclick="clearFilters()">Limpar Filtros</button>
+                    <button class="btn btn-warning" onclick="exportAuditCSV()">Exportar CSV</button>
+                </div>
+            </div>
+
+            <!-- AUDIT LOG TABLE -->
+            <div class="card" style="margin-top:20px;">
+                <div class="card-header">
+                    <h2>Histórico de Alterações</h2>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Usuário</th>
+                                <th>Ação</th>
+                                <th>Tabela</th>
+                                <th>Registro ID</th>
+                                <th>Detalhes</th>
+                                <th>IP</th>
+                            </tr>
+                        </thead>
+                        <tbody id="auditTable">
+                            <!-- Populated -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ACTIVITY SUMMARY -->
+            <div class="dashboard-grid" style="margin-top:20px;">
+                <div class="stat-card blue">
+                    <div class="stat-label">Total de Eventos</div>
+                    <div class="stat-value" id="totalEvents">0</div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-label">Eventos Este Mês</div>
+                    <div class="stat-value" id="monthEvents">0</div>
+                </div>
+                <div class="stat-card orange">
+                    <div class="stat-label">Eventos Hoje</div>
+                    <div class="stat-value" id="todayEvents">0</div>
+                </div>
+                <div class="stat-card red">
+                    <div class="stat-label">Últimas 24h</div>
+                    <div class="stat-value" id="last24Events">0</div>
+                </div>
+            </div>
+
+            <!-- USER ACTIVITY SUMMARY -->
+            <div class="card" style="margin-top:20px;">
+                <div class="card-header">
+                    <h2>Atividade por Usuário</h2>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Usuário</th>
+                                <th>Email</th>
+                                <th>Total de Eventos</th>
+                                <th>Última Atividade</th>
+                                <th>IP</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userActivityTable">
+                            <!-- Populated -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/database.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/calculations.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        let allAuditLogs = [];
+
+        function loadAuditLog() {
+            Auth.canAccess('admin');
+            allAuditLogs = DB.getAuditLog().reverse(); // Most recent first
+            loadStatistics();
+            applyFilters();
+            loadUserActivity();
+        }
+
+        function loadStatistics() {
+            const logs = allAuditLogs;
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+            const totalEvents = logs.length;
+            const monthEvents = logs.filter(l => new Date(l.timestamp) >= monthStart).length;
+            const todayEvents = logs.filter(l => new Date(l.timestamp) >= today).length;
+            const last24Events = logs.filter(l => new Date(l.timestamp) >= last24h).length;
+
+            document.getElementById('totalEvents').textContent = totalEvents;
+            document.getElementById('monthEvents').textContent = monthEvents;
+            document.getElementById('todayEvents').textContent = todayEvents;
+            document.getElementById('last24Events').textContent = last24Events;
+        }
+
+        function applyFilters() {
+            const action = document.getElementById('filterAction').value;
+            const table = document.getElementById('filterTable').value;
+            const startDate = document.getElementById('filterStartDate').value;
+            const endDate = document.getElementById('filterEndDate').value;
+
+            let filtered = allAuditLogs;
+
+            if (action) {
+                filtered = filtered.filter(log => log.action === action);
+            }
+
+            if (table) {
+                filtered = filtered.filter(log => log.table === table);
+            }
+
+            if (startDate) {
+                const start = new Date(startDate).getTime();
+                filtered = filtered.filter(log => new Date(log.timestamp).getTime() >= start);
+            }
+
+            if (endDate) {
+                const end = new Date(endDate).getTime() + 24 * 60 * 60 * 1000;
+                filtered = filtered.filter(log => new Date(log.timestamp).getTime() <= end);
+            }
+
+            populateAuditTable(filtered);
+        }
+
+        function populateAuditTable(logs) {
+            const tbody = document.getElementById('auditTable');
+
+            if (logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Nenhum registro encontrado</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = logs.map(log => {
+                const actionBadge = {
+                    'CREATE': '<span class="badge badge-success">Criação</span>',
+                    'UPDATE': '<span class="badge badge-info">Atualização</span>',
+                    'DELETE': '<span class="badge badge-danger">Exclusão</span>',
+                    'LOGIN': '<span class="badge badge-info">Login</span>',
+                    'LOGOUT': '<span class="badge badge-warning">Logout</span>'
+                };
+
+                return `<tr>
+                    <td>${formatDateTime(log.timestamp)}</td>
+                    <td>${log.userEmail}</td>
+                    <td>${actionBadge[log.action] || log.action}</td>
+                    <td>${log.table}</td>
+                    <td>${log.recordId}</td>
+                    <td>${log.details}</td>
+                    <td>${log.ipAddress}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function loadUserActivity() {
+            const userActivity = {};
+
+            allAuditLogs.forEach(log => {
+                if (!userActivity[log.userEmail]) {
+                    userActivity[log.userEmail] = {
+                        email: log.userEmail,
+                        count: 0,
+                        lastActivity: log.timestamp,
+                        ip: log.ipAddress
+                    };
+                }
+                userActivity[log.userEmail].count++;
+                if (new Date(log.timestamp) > new Date(userActivity[log.userEmail].lastActivity)) {
+                    userActivity[log.userEmail].lastActivity = log.timestamp;
+                }
+            });
+
+            const tbody = document.getElementById('userActivityTable');
+            const users = Object.values(userActivity).sort((a, b) => b.count - a.count);
+
+            tbody.innerHTML = users.map(user => `
+                <tr>
+                    <td>${user.email === 'system' ? 'Sistema' : user.email}</td>
+                    <td>${user.email}</td>
+                    <td>${user.count}</td>
+                    <td>${formatDateTime(user.lastActivity)}</td>
+                    <td>${user.ip}</td>
+                </tr>
+            `).join('');
+        }
+
+        function clearFilters() {
+            document.getElementById('filterAction').value = '';
+            document.getElementById('filterTable').value = '';
+            document.getElementById('filterStartDate').value = '';
+            document.getElementById('filterEndDate').value = '';
+            applyFilters();
+        }
+
+        function exportAuditCSV() {
+            const action = document.getElementById('filterAction').value;
+            const table = document.getElementById('filterTable').value;
+            const startDate = document.getElementById('filterStartDate').value;
+            const endDate = document.getElementById('filterEndDate').value;
+
+            let filtered = allAuditLogs;
+
+            if (action) filtered = filtered.filter(l => l.action === action);
+            if (table) filtered = filtered.filter(l => l.table === table);
+            if (startDate) {
+                const start = new Date(startDate).getTime();
+                filtered = filtered.filter(l => new Date(l.timestamp).getTime() >= start);
+            }
+            if (endDate) {
+                const end = new Date(endDate).getTime() + 24 * 60 * 60 * 1000;
+                filtered = filtered.filter(l => new Date(l.timestamp).getTime() <= end);
+            }
+
+            const data = filtered.map(log => ({
+                'Data/Hora': formatDateTime(log.timestamp),
+                'Usuário': log.userEmail,
+                'Ação': log.action,
+                'Tabela': log.table,
+                'ID Registro': log.recordId,
+                'Detalhes': log.details,
+                'IP': log.ipAddress
+            }));
+
+            AppUtils.exportToCSV(data, 'auditoria_' + new Date().getTime());
+        }
+
+        window.addEventListener('load', loadAuditLog);
+    </script>
+</body>
+</html>

@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Sistema de Ponto</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>🕐 Sistema Ponto</h2>
+                <p>Controle de Frequência</p>
+            </div>
+            <ul class="sidebar-nav">
+                <li><a href="dashboard.html" class="active">📊 Dashboard</a></li>
+                <li><a href="timeclock.html">🕒 Registrar Ponto</a></li>
+                <li><a href="manage-hours.html">⏱️ Gerenciar Horas</a></li>
+                <li><a href="reports.html">📋 Relatórios</a></li>
+                <li id="admin-menu" style="display:none;">
+                    <a href="employees.html">👥 Funcionários</a>
+                </li>
+                <li id="admin-menu2" style="display:none;">
+                    <a href="settings.html">⚙️ Configurações</a>
+                </li>
+                <li id="admin-menu3" style="display:none;">
+                    <a href="audit.html">🔐 Auditoria</a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            <!-- HEADER -->
+            <div class="header">
+                <h1>Dashboard</h1>
+                <div class="header-actions">
+                    <div class="user-info">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- CONTENT -->
+            <div id="dashboardContent">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script src="js/database.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/calculations.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        // Show/hide admin menu
+        const user = Auth.getCurrentUser();
+        if (user && user.role === 'admin') {
+            document.getElementById('admin-menu').style.display = 'block';
+            document.getElementById('admin-menu2').style.display = 'block';
+            document.getElementById('admin-menu3').style.display = 'block';
+        }
+
+        function loadDashboard() {
+            const content = document.getElementById('dashboardContent');
+            const user = Auth.getCurrentUser();
+
+            if (user.role === 'admin') {
+                loadAdminDashboard();
+            } else if (user.role === 'manager') {
+                loadManagerDashboard();
+            } else {
+                loadEmployeeDashboard();
+            }
+        }
+
+        function loadAdminDashboard() {
+            const employees = DB.getEmployees();
+            const timeLogs = DB.getTimeLogs();
+            const today = new Date().toISOString().split('T')[0];
+            const todayLogs = timeLogs.filter(l => l.date === today);
+
+            const presentCount = todayLogs.filter(l => l.status === 'closed' || (l.entryTime && !l.exitTime)).length;
+            const absentCount = employees.length - presentCount;
+            const lunchCount = todayLogs.filter(l => l.lunchStartTime && !l.lunchEndTime).length;
+
+            document.getElementById('dashboardContent').innerHTML = `
+                <h2>Dashboard Administrativo</h2>
+                
+                <div class="dashboard-grid">
+                    <div class="stat-card blue">
+                        <div class="stat-label">Total de Funcionários</div>
+                        <div class="stat-value">${employees.length}</div>
+                    </div>
+                    <div class="stat-card green">
+                        <div class="stat-label">Presentes Hoje</div>
+                        <div class="stat-value">${presentCount}</div>
+                    </div>
+                    <div class="stat-card red">
+                        <div class="stat-label">Ausentes</div>
+                        <div class="stat-value">${absentCount}</div>
+                    </div>
+                    <div class="stat-card orange">
+                        <div class="stat-label">Em Intervalo</div>
+                        <div class="stat-value">${lunchCount}</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Status de Funcionários - Hoje (${formatDate(today)})</h2>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Cargo</th>
+                                    <th>Departamento</th>
+                                    <th>Status</th>
+                                    <th>Entrada</th>
+                                    <th>Saída Almoço</th>
+                                    <th>Volta Almoço</th>
+                                    <th>Saída</th>
+                                </tr>
+                            </thead>
+                            <tbody id="todayStatusTable">
+                                <!-- Populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+
+            loadTodayStatusTable(todayLogs);
+        }
+
+        function loadManagerDashboard() {
+            const user = Auth.getCurrentUser();
+            const timeLogs = DB.getTimeLogs();
+            const today = new Date().toISOString().split('T')[0];
+            const todayLogs = timeLogs.filter(l => l.date === today);
+
+            const presentCount = todayLogs.filter(l => l.status === 'closed' || (l.entryTime && !l.exitTime)).length;
+            const lunchCount = todayLogs.filter(l => l.lunchStartTime && !l.lunchEndTime).length;
+
+            document.getElementById('dashboardContent').innerHTML = `
+                <h2>Dashboard do Gestor</h2>
+                
+                <div class="dashboard-grid">
+                    <div class="stat-card green">
+                        <div class="stat-label">Presentes Hoje</div>
+                        <div class="stat-value">${presentCount}</div>
+                    </div>
+                    <div class="stat-card orange">
+                        <div class="stat-label">Em Intervalo</div>
+                        <div class="stat-value">${lunchCount}</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Status de Presença - Hoje</h2>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Status</th>
+                                    <th>Entrada</th>
+                                    <th>Saída</th>
+                                </tr>
+                            </thead>
+                            <tbody id="managerStatusTable">
+                                <!-- Populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+
+            populateManagerTable(todayLogs);
+        }
+
+        function loadEmployeeDashboard() {
+            const user = Auth.getCurrentUser();
+            const employee = DB.getEmployeeById(user.employeeId);
+            const timeLogs = DB.getTimeLogsByEmployee(user.employeeId);
+            
+            // Get last 7 days
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            const recentLogs = timeLogs.filter(l => new Date(l.date) >= sevenDaysAgo).reverse();
+
+            // Calculate this period
+            const period = HourCalculations.getCurrentPeriod();
+            const periodLogs = timeLogs.filter(l => {
+                const logDate = new Date(l.date);
+                return logDate >= period.start && logDate <= period.end;
+            });
+
+            let totalWorked = 0;
+            periodLogs.forEach(log => {
+                totalWorked += HourCalculations.calculateDailyWorkedHours(log);
+            });
+            totalWorked = (totalWorked / 60).toFixed(2);
+            const balance = (totalWorked - employee.monthlyHours).toFixed(2);
+
+            document.getElementById('dashboardContent').innerHTML = `
+                <h2>Bem-vindo, ${employee.name}!</h2>
+                
+                <div class="dashboard-grid">
+                    <div class="stat-card blue">
+                        <div class="stat-label">Cargo</div>
+                        <div style="font-size: 18px; font-weight: 600;">${employee.position}</div>
+                    </div>
+                    <div class="stat-card teal">
+                        <div class="stat-label">Jornada Esperada (Mês)</div>
+                        <div class="stat-value">${employee.monthlyHours}h</div>
+                    </div>
+                    <div class="stat-card green">
+                        <div class="stat-label">Horas Trabalhadas (Período)</div>
+                        <div class="stat-value">${totalWorked}h</div>
+                    </div>
+                    <div class="stat-card ${balance >= 0 ? 'green' : 'red'}">
+                        <div class="stat-label">Saldo de Horas</div>
+                        <div class="stat-value">${balance > 0 ? '+' : ''}${balance}h</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Últimos 7 Dias</h2>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Dia da Semana</th>
+                                    <th>Entrada</th>
+                                    <th>Saída</th>
+                                    <th>Horas Trabalhadas</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentLogsTable">
+                                <!-- Populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+
+            populateRecentLogs(recentLogs);
+        }
+
+        function loadTodayStatusTable(todayLogs) {
+            const employees = DB.getEmployees();
+            const tbody = document.getElementById('todayStatusTable');
+            
+            if (todayLogs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Nenhum registro para hoje</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = employees.map(emp => {
+                const log = todayLogs.find(l => l.employeeId === emp.id);
+                let status = '<span class="badge badge-danger">Ausente</span>';
+                
+                if (log) {
+                    if (log.lunchStartTime && !log.lunchEndTime) {
+                        status = '<span class="badge badge-warning">Em Intervalo</span>';
+                    } else if (log.entryTime && log.exitTime) {
+                        status = '<span class="badge badge-success">Presente</span>';
+                    } else if (log.entryTime) {
+                        status = '<span class="badge badge-info">Em Atividade</span>';
+                    }
+                }
+
+                return `
+                    <tr>
+                        <td>${emp.name}</td>
+                        <td>${emp.position}</td>
+                        <td>${emp.department}</td>
+                        <td>${status}</td>
+                        <td>${log?.entryTime || '-'}</td>
+                        <td>${log?.lunchStartTime || '-'}</td>
+                        <td>${log?.lunchEndTime || '-'}</td>
+                        <td>${log?.exitTime || '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function populateManagerTable(todayLogs) {
+            const tbody = document.getElementById('managerStatusTable');
+            const employees = DB.getEmployees();
+
+            tbody.innerHTML = employees.map(emp => {
+                const log = todayLogs.find(l => l.employeeId === emp.id);
+                let status = '<span class="badge badge-danger">Ausente</span>';
+                
+                if (log) {
+                    if (log.lunchStartTime && !log.lunchEndTime) {
+                        status = '<span class="badge badge-warning">Em Intervalo</span>';
+                    } else if (log.entryTime && log.exitTime) {
+                        status = '<span class="badge badge-success">Presente</span>';
+                    } else if (log.entryTime) {
+                        status = '<span class="badge badge-info">Em Atividade</span>';
+                    }
+                }
+
+                return `
+                    <tr>
+                        <td>${emp.name}</td>
+                        <td>${status}</td>
+                        <td>${log?.entryTime || '-'}</td>
+                        <td>${log?.exitTime || '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function populateRecentLogs(logs) {
+            const tbody = document.getElementById('recentLogsTable');
+            
+            if (logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Nenhum registro</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = logs.map(log => {
+                const date = new Date(log.date);
+                const dayOfWeek = date.toLocaleDateString('pt-BR', { weekday: 'long' });
+                const workedHours = (HourCalculations.calculateDailyWorkedHours(log) / 60).toFixed(2);
+
+                return `
+                    <tr>
+                        <td>${formatDate(log.date)}</td>
+                        <td>${dayOfWeek}</td>
+                        <td>${log.entryTime || '-'}</td>
+                        <td>${log.exitTime || '-'}</td>
+                        <td>${workedHours}h</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Load dashboard
+        window.addEventListener('load', loadDashboard);
+    </script>
+</body>
+</html>

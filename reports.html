@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatórios - Sistema de Ponto</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>🕐 Sistema Ponto</h2>
+                <p>Controle de Frequência</p>
+            </div>
+            <ul class="sidebar-nav">
+                <li><a href="dashboard.html">📊 Dashboard</a></li>
+                <li><a href="timeclock.html">🕒 Registrar Ponto</a></li>
+                <li><a href="manage-hours.html">⏱️ Gerenciar Horas</a></li>
+                <li><a href="reports.html" class="active">📋 Relatórios</a></li>
+                <li id="admin-menu" style="display:none;">
+                    <a href="employees.html">👥 Funcionários</a>
+                </li>
+                <li id="admin-menu2" style="display:none;">
+                    <a href="settings.html">⚙️ Configurações</a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            <!-- HEADER -->
+            <div class="header">
+                <h1>Relatórios</h1>
+                <div class="header-actions">
+                    <div class="user-info">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- FILTERS -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Filtros de Relatório</h2>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="reportType">Tipo de Relatório:</label>
+                        <select id="reportType" onchange="updateReportFilters()">
+                            <option value="period">Fechamento de Período</option>
+                            <option value="employee">Funcionário Individual</option>
+                            <option value="department">Por Departamento</option>
+                            <option value="summary">Resumo Geral</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="startDate">Data Inicial:</label>
+                        <input type="date" id="startDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="endDate">Data Final:</label>
+                        <input type="date" id="endDate">
+                    </div>
+                </div>
+                
+                <div id="extraFilters" style="display:none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="employeeFilter">Funcionário:</label>
+                            <select id="employeeFilter">
+                                <option value="">Selecione...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="departmentFilter">Departamento:</label>
+                            <select id="departmentFilter">
+                                <option value="">Todos</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="generateReport()">Gerar Relatório</button>
+                    <button class="btn btn-secondary" onclick="exportReportCSV()">Exportar CSV</button>
+                    <button class="btn btn-warning" onclick="exportReportPDF()">Exportar PDF</button>
+                </div>
+            </div>
+
+            <!-- REPORT CONTENT -->
+            <div id="reportContent">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script src="js/database.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/calculations.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        const user = Auth.getCurrentUser();
+        if (user && user.role === 'admin') {
+            document.getElementById('admin-menu').style.display = 'block';
+            document.getElementById('admin-menu2').style.display = 'block';
+        }
+
+        function initializeFilters() {
+            const employees = DB.getEmployees();
+            const departments = [...new Set(employees.map(e => e.department))];
+
+            const employeeSelect = document.getElementById('employeeFilter');
+            employees.forEach(emp => {
+                const option = document.createElement('option');
+                option.value = emp.id;
+                option.text = emp.name;
+                employeeSelect.appendChild(option);
+            });
+
+            const departmentSelect = document.getElementById('departmentFilter');
+            departments.forEach(dept => {
+                const option = document.createElement('option');
+                option.value = dept;
+                option.text = dept;
+                departmentSelect.appendChild(option);
+            });
+
+            // Set default dates
+            const today = new Date();
+            const period = HourCalculations.getCurrentPeriod();
+            document.getElementById('startDate').value = period.start.toISOString().split('T')[0];
+            document.getElementById('endDate').value = period.end.toISOString().split('T')[0];
+        }
+
+        function updateReportFilters() {
+            const reportType = document.getElementById('reportType').value;
+            const extraFilters = document.getElementById('extraFilters');
+            
+            if (reportType === 'employee') {
+                extraFilters.style.display = 'block';
+                document.getElementById('employeeFilter').parentElement.style.display = 'block';
+                document.getElementById('departmentFilter').parentElement.style.display = 'none';
+            } else if (reportType === 'department') {
+                extraFilters.style.display = 'block';
+                document.getElementById('employeeFilter').parentElement.style.display = 'none';
+                document.getElementById('departmentFilter').parentElement.style.display = 'block';
+            } else {
+                extraFilters.style.display = 'none';
+            }
+        }
+
+        function generateReport() {
+            const reportType = document.getElementById('reportType').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            if (!startDate || !endDate) {
+                AppUtils.showError('Preencha as datas de início e fim');
+                return;
+            }
+
+            let reportHtml = '';
+
+            switch (reportType) {
+                case 'period':
+                    reportHtml = generatePeriodReport(startDate, endDate);
+                    break;
+                case 'employee':
+                    const empId = parseInt(document.getElementById('employeeFilter').value);
+                    if (!empId) {
+                        AppUtils.showError('Selecione um funcionário');
+                        return;
+                    }
+                    reportHtml = generateEmployeeReport(empId, startDate, endDate);
+                    break;
+                case 'department':
+                    const dept = document.getElementById('departmentFilter').value;
+                    reportHtml = generateDepartmentReport(dept, startDate, endDate);
+                    break;
+                case 'summary':
+                    reportHtml = generateSummaryReport(startDate, endDate);
+                    break;
+            }
+
+            document.getElementById('reportContent').innerHTML = reportHtml;
+        }
+
+        function generatePeriodReport(startDate, endDate) {
+            const employees = DB.getEmployees();
+            const closures = [];
+
+            let html = '<div class="card"><div class="card-header"><h2>Fechamento de Período</h2><p>' + 
+                      formatDate(startDate) + ' a ' + formatDate(endDate) + '</p></div>';
+            
+            html += '<div class="table-container"><table><thead><tr>' +
+                   '<th>Funcionário</th>' +
+                   '<th>Horas Trabalhadas</th>' +
+                   '<th>Jornada Esperada</th>' +
+                   '<th>Saldo</th>' +
+                   '<th>Extras</th>' +
+                   '<th>Valor Total</th>' +
+                   '<th>Status</th>' +
+                   '</tr></thead><tbody>';
+
+            employees.forEach(emp => {
+                const closure = HourCalculations.calculatePeriodClosure(emp.id, startDate, endDate);
+                closures.push(closure);
+                
+                html += `<tr>
+                    <td>${emp.name}</td>
+                    <td>${closure.totalWorkedHours}h</td>
+                    <td>${closure.expectedHours}h</td>
+                    <td class="${closure.balanceHours >= 0 ? 'green' : 'red'}">
+                        ${closure.balanceHours > 0 ? '+' : ''}${closure.balanceHours.toFixed(2)}h
+                    </td>
+                    <td>${closure.overtimeHours.toFixed(2)}h</td>
+                    <td>${formatCurrency(closure.totalValue)}</td>
+                    <td><span class="badge badge-info">Em Aberto</span></td>
+                </tr>`;
+            });
+
+            html += '</tbody></table></div></div>';
+            return html;
+        }
+
+        function generateEmployeeReport(employeeId, startDate, endDate) {
+            const employee = DB.getEmployeeById(employeeId);
+            const timeLogs = DB.getTimeLogsByEmployee(employeeId, startDate, endDate);
+            const closure = HourCalculations.calculatePeriodClosure(employeeId, startDate, endDate);
+
+            let html = `<div class="card">
+                <div class="card-header">
+                    <h2>Relatório Individual - ${employee.name}</h2>
+                </div>
+                <table style="width:100%; margin-bottom:20px;">
+                    <tr>
+                        <td><strong>CPF:</strong> ${employee.cpf}</td>
+                        <td><strong>Cargo:</strong> ${employee.position}</td>
+                        <td><strong>Departamento:</strong> ${employee.department}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Matrícula:</strong> ${employee.registrationNumber}</td>
+                        <td><strong>Tipo de Contrato:</strong> ${employee.contract}</td>
+                        <td><strong>Valor/Hora:</strong> ${formatCurrency(employee.hourlyRate)}</td>
+                    </tr>
+                </table>
+
+                <h3 style="margin-top:20px;">Resumo do Período (${formatDate(startDate)} a ${formatDate(endDate)})</h3>
+                <table style="width:100%; margin-bottom:20px;">
+                    <tr style="background:#f0f0f0;">
+                        <td style="padding:10px;"><strong>Total de Horas Trabalhadas:</strong></td>
+                        <td style="padding:10px;">${closure.totalWorkedHours}h</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:10px;"><strong>Jornada Esperada:</strong></td>
+                        <td style="padding:10px;">${closure.expectedHours}h</td>
+                    </tr>
+                    <tr style="background:#f0f0f0;">
+                        <td style="padding:10px;"><strong>Saldo de Horas:</strong></td>
+                        <td style="padding:10px; color:${closure.balanceHours >= 0 ? 'green' : 'red'};">
+                            <strong>${closure.balanceHours > 0 ? '+' : ''}${closure.balanceHours.toFixed(2)}h</strong>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:10px;"><strong>Horas Extras:</strong></td>
+                        <td style="padding:10px;">${closure.overtimeHours.toFixed(2)}h</td>
+                    </tr>
+                    <tr style="background:#f0f0f0;">
+                        <td style="padding:10px;"><strong>Dias Presentes:</strong></td>
+                        <td style="padding:10px;">${closure.daysPresent}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:10px;"><strong>Dias Ausentes:</strong></td>
+                        <td style="padding:10px;">${closure.daysAbsent}</td>
+                    </tr>
+                </table>
+
+                <h3>Detalhamento por Dia</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Dia da Semana</th>
+                                <th>Entrada</th>
+                                <th>Saída</th>
+                                <th>Horas</th>
+                                <th>Situação</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+
+            timeLogs.forEach(log => {
+                const date = new Date(log.date);
+                const dayOfWeek = date.toLocaleDateString('pt-BR', { weekday: 'long' });
+                const workedHours = (HourCalculations.calculateDailyWorkedHours(log) / 60).toFixed(2);
+
+                html += `<tr>
+                    <td>${formatDate(log.date)}</td>
+                    <td>${dayOfWeek}</td>
+                    <td>${log.entryTime || '-'}</td>
+                    <td>${log.exitTime || '-'}</td>
+                    <td>${workedHours}h</td>
+                    <td><span class="badge badge-success">Registrado</span></td>
+                </tr>`;
+            });
+
+            html += `</tbody></table></div></div>`;
+            return html;
+        }
+
+        function generateDepartmentReport(department, startDate, endDate) {
+            const employees = DB.getEmployees().filter(e => !department || e.department === department);
+            
+            let html = `<div class="card">
+                <div class="card-header">
+                    <h2>Relatório por Departamento${department ? ' - ' + department : ''}</h2>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Funcionário</th>
+                                <th>Cargo</th>
+                                <th>Horas Trabalhadas</th>
+                                <th>Jornada Esperada</th>
+                                <th>Saldo</th>
+                                <th>Extras</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+
+            employees.forEach(emp => {
+                const closure = HourCalculations.calculatePeriodClosure(emp.id, startDate, endDate);
+                html += `<tr>
+                    <td>${emp.name}</td>
+                    <td>${emp.position}</td>
+                    <td>${closure.totalWorkedHours}h</td>
+                    <td>${closure.expectedHours}h</td>
+                    <td class="${closure.balanceHours >= 0 ? 'green' : 'red'}">
+                        ${closure.balanceHours > 0 ? '+' : ''}${closure.balanceHours.toFixed(2)}h
+                    </td>
+                    <td>${closure.overtimeHours.toFixed(2)}h</td>
+                </tr>`;
+            });
+
+            html += `</tbody></table></div></div>`;
+            return html;
+        }
+
+        function generateSummaryReport(startDate, endDate) {
+            const employees = DB.getEmployees();
+            let totalWorked = 0;
+            let totalExpected = 0;
+            let totalExtras = 0;
+            let totalValue = 0;
+
+            employees.forEach(emp => {
+                const closure = HourCalculations.calculatePeriodClosure(emp.id, startDate, endDate);
+                totalWorked += closure.totalWorkedHours;
+                totalExpected += closure.expectedHours;
+                totalExtras += closure.overtimeHours;
+                totalValue += closure.totalValue;
+            });
+
+            const html = `<div class="card">
+                <div class="card-header">
+                    <h2>Resumo Geral da Empresa</h2>
+                    <p>${formatDate(startDate)} a ${formatDate(endDate)}</p>
+                </div>
+                <table style="width:100%;">
+                    <tr style="background:#f0f0f0; font-size:16px; font-weight:bold;">
+                        <td style="padding:15px;">Total de Horas Trabalhadas:</td>
+                        <td style="padding:15px;">${totalWorked.toFixed(2)}h</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:15px;">Total de Horas Esperadas:</td>
+                        <td style="padding:15px;">${totalExpected.toFixed(2)}h</td>
+                    </tr>
+                    <tr style="background:#f0f0f0;">
+                        <td style="padding:15px;">Total de Horas Extras:</td>
+                        <td style="padding:15px;">${totalExtras.toFixed(2)}h</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:15px; font-size:16px; font-weight:bold;">Total em Folha de Pagamento:</td>
+                        <td style="padding:15px; font-size:16px; font-weight:bold;">${formatCurrency(totalValue)}</td>
+                    </tr>
+                </table>
+            </div>`;
+
+            return html;
+        }
+
+        function exportReportCSV() {
+            const reportType = document.getElementById('reportType').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            if (reportType === 'employee') {
+                const empId = parseInt(document.getElementById('employeeFilter').value);
+                if (!empId) {
+                    AppUtils.showError('Selecione um funcionário');
+                    return;
+                }
+                const employee = DB.getEmployeeById(empId);
+                const timeLogs = DB.getTimeLogsByEmployee(empId, startDate, endDate);
+                const data = timeLogs.map(log => ({
+                    Data: formatDate(log.date),
+                    Entrada: log.entryTime || '-',
+                    Saída: log.exitTime || '-',
+                    'Horas Trabalhadas': (HourCalculations.calculateDailyWorkedHours(log) / 60).toFixed(2)
+                }));
+                AppUtils.exportToCSV(data, `relatorio_${employee.name}_${startDate}_${endDate}`);
+            }
+        }
+
+        function exportReportPDF() {
+            const reportContent = document.getElementById('reportContent').innerHTML;
+            if (!reportContent) {
+                AppUtils.showError('Gere um relatório primeiro');
+                return;
+            }
+            
+            const pdfContent = AppUtils.generatePDFContent('Relatório de Ponto', reportContent);
+            AppUtils.exportToPDF(pdfContent, 'relatorio_ponto_' + new Date().getTime());
+        }
+
+        window.addEventListener('load', function() {
+            initializeFilters();
+            updateReportFilters();
+        });
+    </script>
+</body>
+</html>
