@@ -9,34 +9,52 @@ class Database {
 
     initDatabase() {
         // Initialize default data if empty
-        if (!localStorage.getItem(this.dbName + '_employees')) {
-            this.insertDefaultEmployees();
-        }
-        if (!localStorage.getItem(this.dbName + '_timelogs')) {
-            localStorage.setItem(this.dbName + '_timelogs', JSON.stringify([]));
-        }
-        if (!localStorage.getItem(this.dbName + '_closures')) {
-            localStorage.setItem(this.dbName + '_closures', JSON.stringify([]));
-        }
-        if (!localStorage.getItem(this.dbName + '_users')) {
-            this.insertDefaultUsers();
-        }
-        if (!localStorage.getItem(this.dbName + '_auditlog')) {
-            localStorage.setItem(this.dbName + '_auditlog', JSON.stringify([]));
-        }
-        if (!localStorage.getItem(this.dbName + '_settings')) {
-            this.insertDefaultSettings();
-        }
-        if (!localStorage.getItem(this.dbName + '_departments')) {
-            this.insertDefaultDepartments();
-        }
-    }
-
-    insertDefaultUsers() {
-        const users = [
             {
                 id: 1,
                 email: 'ti@empresa.com',
+                password: 'ti123',
+                name: 'Admin TI',
+                role: 'admin_system',
+                department: 'TI',
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 2,
+                email: 'rh@empresa.com',
+                password: 'rh123',
+                name: 'Admin RH',
+                role: 'admin_business',
+                department: 'RH',
+                createdAt: new Date().toISOString()
+            },
+        if (!localStorage.getItem(this.dbName + '_employees')) {
+                id: 3,
+                email: 'admin@empresa.com',
+                password: 'admin123',
+                name: 'Administrador RH',
+                role: 'admin',
+                department: 'RH',
+                createdAt: new Date().toISOString()
+        }
+            {
+                id: 4,
+                email: 'gestor@empresa.com',
+                password: 'gestor123',
+                name: 'Carlos Gestor',
+                role: 'manager',
+                department: 'Gestão',
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 5,
+                email: 'joao@empresa.com',
+                password: 'joao123',
+                name: 'João Silva',
+                role: 'employee',
+                employeeId: 1,
+                department: 'TI',
+                createdAt: new Date().toISOString()
+            }
                 password: 'ti123',
                 name: 'Administrador TI',
                 role: 'admin_system',
