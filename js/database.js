@@ -414,6 +414,9 @@ class Database {
         localStorage.removeItem(this.dbName + '_users');
         localStorage.removeItem(this.dbName + '_auditlog');
         localStorage.removeItem(this.dbName + '_settings');
+        localStorage.removeItem(this.dbName + '_departments');
+        localStorage.removeItem(Auth.tokenKey);
+        Auth.currentUser = null;
         this.initDatabase();
     }
 

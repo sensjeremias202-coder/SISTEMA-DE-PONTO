@@ -19,7 +19,7 @@ class Auth {
                 employeeId: user.employeeId || null
             };
             
-            sessionStorage.setItem(Auth.tokenKey, JSON.stringify(sessionUser));
+            localStorage.setItem(Auth.tokenKey, JSON.stringify(sessionUser));
             this.currentUser = sessionUser;
             DB.addAuditLog('LOGIN', 'users', user.id, `Usuário ${email} fez login`);
             return true;
@@ -32,7 +32,7 @@ class Auth {
         if (this.currentUser) {
             DB.addAuditLog('LOGOUT', 'users', this.currentUser.id, `Usuário ${this.currentUser.email} fez logout`);
         }
-        sessionStorage.removeItem(Auth.tokenKey);
+        localStorage.removeItem(Auth.tokenKey);
         this.currentUser = null;
         window.location.href = 'index.html';
     }
@@ -40,7 +40,7 @@ class Auth {
     static getCurrentUser() {
         if (this.currentUser) return this.currentUser;
         
-        const stored = sessionStorage.getItem(Auth.tokenKey);
+        const stored = localStorage.getItem(Auth.tokenKey);
         if (stored) {
             this.currentUser = JSON.parse(stored);
             return this.currentUser;
