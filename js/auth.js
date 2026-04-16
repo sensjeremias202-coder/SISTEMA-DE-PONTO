@@ -6,7 +6,9 @@ class Auth {
 
     static login(email, password) {
         const users = DB.getUsers();
+        console.log('Users in DB:', users);
         const user = users.find(u => u.email === email && u.password === password);
+        console.log('Found user:', user);
         
         if (user) {
             // Remove sensitive data before storing
