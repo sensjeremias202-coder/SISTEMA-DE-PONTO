@@ -22,8 +22,79 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #f5f7fa;
     color: var(--dark);
-    line-height: 1.6;
+    line-height: 1.7;
+    font-size: 18px; /* fonte base maior para melhor legibilidade */
+    -webkit-text-size-adjust: 100%;
 }
+
+/* ===== ACCESSIBILITY HELPERS ===== */
+.accessibility-toolbar {
+    position: fixed;
+    right: 16px;
+    top: 16px;
+    background: rgba(255,255,255,0.95);
+    border-radius: 10px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    padding: 8px;
+    z-index: 3000;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+.accessibility-toolbar button {
+    border: none;
+    background: var(--secondary);
+    color: white;
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 14px;
+}
+.accessibility-toolbar button.toggle-off {
+    background: #7f8c8d;
+}
+
+/* Large text mode */
+.accessibility-large-text {
+    font-size: 20px !important;
+}
+.accessibility-large-text h1 { font-size: 2.2em; }
+.accessibility-large-text h2 { font-size: 1.6em; }
+.accessibility-large-text .time-display { font-size: 64px; }
+
+/* High contrast mode */
+.accessibility-high-contrast {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+}
+.accessibility-high-contrast a { color: #0000ee !important; }
+.accessibility-high-contrast .sidebar { background: #000000 !important; color: #ffffff !important; }
+.accessibility-high-contrast .card, .accessibility-high-contrast .form-container, .accessibility-high-contrast .modal-content { background: #ffffff !important; border: 2px solid #000000 !important; }
+
+/* Focus visible for keyboard users */
+*:focus-visible {
+    outline: 3px solid #ffcc00;
+    outline-offset: 2px;
+}
+
+/* Larger clickable targets */
+.btn, button, .logout-btn, input[type="button"], input[type="submit"], .timeclock-buttons button {
+    padding: 14px 22px;
+    font-size: 16px;
+}
+
+input[type="text"], input[type="password"], select, textarea {
+    padding: 14px;
+    font-size: 16px;
+}
+
+/* Make table action buttons easier to tap */
+.btn-edit, .btn-delete, .btn-view {
+    padding: 10px 14px;
+    font-size: 14px;
+}
+
 
 /* ===== LOGIN PAGE ===== */
 .login-page {

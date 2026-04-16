@@ -206,3 +206,84 @@ function timeFormat(minutes) {
 function hoursFormat(minutes) {
     return HourCalculations.formatTimeHours(minutes);
 }
+
+// ===== ACCESSIBILITY TOOLBAR =====
+function applyAccessibilitySettings(settings) {
+    if (!settings) settings = {};
+    document.body.classList.toggle('accessibility-large-text', !!settings.largeText);
+    document.body.classList.toggle('accessibility-high-contrast', !!settings.highContrast);
+}
+
+function saveAccessibilitySettings(settings) {
+    localStorage.setItem('accessibilitySettings', JSON.stringify(settings));
+}
+
+function readAccessibilitySettings() {
+    try {
+        return JSON.parse(localStorage.getItem('accessibilitySettings')) || {};
+    } catch (e) {
+        return {};
+    }
+}
+
+function createAccessibilityToolbar() {
+    const toolbar = document.createElement('div');
+    toolbar.className = 'accessibility-toolbar';
+    toolbar.setAttribute('role', 'region');
+    toolbar.setAttribute('aria-label', 'Barra de acessibilidade');
+
+    const settings = readAccessibilitySettings();
+
+    const btnLarge = document.createElement('button');
+    btnLarge.textContent = 'Aumentar texto';
+    btnLarge.setAttribute('aria-pressed', !!settings.largeText);
+    if (!settings.largeText) btnLarge.classList.add('toggle-off');
+    btnLarge.addEventListener('click', () => {
+        settings.largeText = !settings.largeText;
+        btnLarge.setAttribute('aria-pressed', !!settings.largeText);
+        btnLarge.classList.toggle('toggle-off', !settings.largeText);
+        applyAccessibilitySettings(settings);
+        saveAccessibilitySettings(settings);
+    });
+
+    const btnContrast = document.createElement('button');
+    btnContrast.textContent = 'Alto contraste';
+    btnContrast.setAttribute('aria-pressed', !!settings.highContrast);
+    if (!settings.highContrast) btnContrast.classList.add('toggle-off');
+    btnContrast.addEventListener('click', () => {
+        settings.highContrast = !settings.highContrast;
+        btnContrast.setAttribute('aria-pressed', !!settings.highContrast);
+        btnContrast.classList.toggle('toggle-off', !settings.highContrast);
+        applyAccessibilitySettings(settings);
+        saveAccessibilitySettings(settings);
+    });
+
+    const btnReset = document.createElement('button');
+    btnReset.textContent = 'Restaurar';
+    btnReset.addEventListener('click', () => {
+        const newSettings = { largeText: false, highContrast: false };
+        applyAccessibilitySettings(newSettings);
+        saveAccessibilitySettings(newSettings);
+        btnLarge.setAttribute('aria-pressed', 'false');
+        btnLarge.classList.add('toggle-off');
+        btnContrast.setAttribute('aria-pressed', 'false');
+        btnContrast.classList.add('toggle-off');
+    });
+
+    toolbar.appendChild(btnLarge);
+    toolbar.appendChild(btnContrast);
+    toolbar.appendChild(btnReset);
+
+    document.body.appendChild(toolbar);
+
+    // Apply stored settings on create
+    applyAccessibilitySettings(settings);
+}
+
+// Add toolbar after DOM ready
+document.addEventListener('DOMContentLoaded', function() {
+    // avoid duplicate toolbar if script runs twice
+    if (!document.querySelector('.accessibility-toolbar')) {
+        createAccessibilityToolbar();
+    }
+});
