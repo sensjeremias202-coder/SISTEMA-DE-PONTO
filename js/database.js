@@ -36,15 +36,24 @@ class Database {
         const users = [
             {
                 id: 1,
-                email: 'admin@empresa.com',
-                password: 'admin123',
-                name: 'Administrador RH',
-                role: 'admin',
-                department: 'RH',
+                email: 'ti@empresa.com',
+                password: 'ti123',
+                name: 'Administrador TI',
+                role: 'admin_system',
+                department: 'TI',
                 createdAt: new Date().toISOString()
             },
             {
                 id: 2,
+                email: 'rh@empresa.com',
+                password: 'rh123',
+                name: 'Administrador RH',
+                role: 'admin_business',
+                department: 'RH',
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 3,
                 email: 'gestor@empresa.com',
                 password: 'gestor123',
                 name: 'Carlos Gestor',
@@ -53,7 +62,7 @@ class Database {
                 createdAt: new Date().toISOString()
             },
             {
-                id: 3,
+                id: 4,
                 email: 'joao@empresa.com',
                 password: 'joao123',
                 name: 'João Silva',

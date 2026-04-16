@@ -68,8 +68,16 @@ class Auth {
         return false;
     }
 
+    static isSystemAdmin() {
+        return this.hasRole('admin_system');
+    }
+
+    static isBusinessAdmin() {
+        return this.hasRole('admin_business');
+    }
+
     static isAdmin() {
-        return this.hasRole('admin');
+        return this.hasRole(['admin_system', 'admin_business']);
     }
 
     static isManager() {
@@ -87,14 +95,22 @@ class Auth {
         }
 
         const roleHierarchy = {
-            'admin': 3,
-            'manager': 2,
-            'employee': 1
+            'admin_system': 4,
+            'admin_business': 4,
+            'admin': 4,
+            'manager': 3,
+            'employee': 2
         };
 
         const userRole = this.getCurrentUser().role;
-        const requiredLevel = roleHierarchy[requiredRole] || 0;
         const userLevel = roleHierarchy[userRole] || 0;
+
+        let requiredLevel = 0;
+        if (Array.isArray(requiredRole)) {
+            requiredLevel = Math.max(...requiredRole.map(r => roleHierarchy[r] || 0));
+        } else {
+            requiredLevel = roleHierarchy[requiredRole] || 0;
+        }
 
         if (userLevel < requiredLevel) {
             alert('Acesso negado. Você não tem permissão para acessar esta página.');
@@ -110,18 +126,50 @@ class Auth {
         if (!user) return {};
 
         const permissions = {
+            'admin_system': {
+                viewDashboard: true,
+                viewEmployees: true,
+                editEmployees: false,
+                viewTimeClocks: true,
+                editTimeClocks: false,
+                viewReports: true,
+                generateReports: true,
+                viewAuditLog: true,
+                manageUsers: false,
+                manageSettings: true,
+                closePeriods: true,
+                clearData: true,
+                manageInfrastructure: true
+            },
+            'admin_business': {
+                viewDashboard: true,
+                viewEmployees: true,
+                editEmployees: true,
+                viewTimeClocks: true,
+                editTimeClocks: false,
+                viewReports: true,
+                generateReports: true,
+                viewAuditLog: false,
+                manageUsers: true,
+                manageSettings: true,
+                closePeriods: true,
+                clearData: false,
+                manageInfrastructure: false
+            },
             'admin': {
                 viewDashboard: true,
                 viewEmployees: true,
                 editEmployees: true,
                 viewTimeClocks: true,
-                editTimeClocks: true,
+                editTimeClocks: false,
                 viewReports: true,
                 generateReports: true,
-                viewAuditLog: true,
+                viewAuditLog: false,
                 manageUsers: true,
                 manageSettings: true,
-                closePeriods: true
+                closePeriods: true,
+                clearData: false,
+                manageInfrastructure: false
             },
             'manager': {
                 viewDashboard: true,
@@ -134,7 +182,9 @@ class Auth {
                 viewAuditLog: false,
                 manageUsers: false,
                 manageSettings: false,
-                closePeriods: false
+                closePeriods: false,
+                clearData: false,
+                manageInfrastructure: false
             },
             'employee': {
                 viewDashboard: true,
@@ -147,7 +197,9 @@ class Auth {
                 viewAuditLog: false,
                 manageUsers: false,
                 manageSettings: false,
-                closePeriods: false
+                closePeriods: false,
+                clearData: false,
+                manageInfrastructure: false
             }
         };
 

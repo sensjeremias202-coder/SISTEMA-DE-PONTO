@@ -158,7 +158,7 @@
         let allAuditLogs = [];
 
         function loadAuditLog() {
-            Auth.canAccess('admin');
+            Auth.canAccess('admin_system');
             allAuditLogs = DB.getAuditLog().reverse(); // Most recent first
             loadStatistics();
             applyFilters();

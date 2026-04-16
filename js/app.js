@@ -27,7 +27,9 @@ class AppUtils {
 
     static getRoleLabel(role) {
         const labels = {
-            'admin': '👨‍💼 Administrador RH',
+            'admin_system': '🖥️ TI (Admin Sistema)',
+            'admin_business': '👩‍💼 RH (Admin Negócio)',
+            'admin': '👩‍💼 RH (Admin Negócio)',
             'manager': '👤 Gestor',
             'employee': '👷 Funcionário'
         };
