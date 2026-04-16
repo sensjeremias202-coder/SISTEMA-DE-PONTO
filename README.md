@@ -84,9 +84,13 @@ Abra `index.html` no navegador e utilize as credenciais de demo:
 
 #### Usuários Demo
 ```
-Admin RH:
-  Email: admin@empresa.com
-  Senha: admin123
+TI (Admin Sistema):
+  Email: ti@empresa.com
+  Senha: ti123
+
+RH (Admin Negócio):
+  Email: rh@empresa.com
+  Senha: rh123
 
 Gestor:
   Email: gestor@empresa.com

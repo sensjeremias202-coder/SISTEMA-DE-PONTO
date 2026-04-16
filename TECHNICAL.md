@@ -104,8 +104,8 @@
   "table": "employees|timelogs|closures|users|settings",
   "recordId": 1,
   "details": "Funcionário João Silva criado",
-  "userId": 1,
-  "userEmail": "admin@empresa.com",
+  "userId": 2,
+  "userEmail": "rh@empresa.com",
   "timestamp": "2026-04-16T10:30:00Z",
   "ipAddress": "192.168.1.100"
 }

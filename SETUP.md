@@ -12,7 +12,8 @@ Use uma destas credenciais:
 
 | Perfil | Email | Senha |
 |--------|-------|-------|
-| 👨‍💼 Admin RH | admin@empresa.com | admin123 |
+| �️ TI (Admin Sistema) | ti@empresa.com | ti123 |
+| 👩‍💼 RH (Admin Negócio) | rh@empresa.com | rh123 |
 | 👤 Gestor | gestor@empresa.com | gestor123 |
 | 👷 Funcionário | joao@empresa.com | joao123 |
 

@@ -123,8 +123,8 @@ Clique 2x em: index.html
 
 ### 2. Fazer Login
 ```
-Email: admin@empresa.com
-Senha: admin123
+Email: ti@empresa.com
+Senha: ti123
 ```
 
 ### 3. Explorar
@@ -147,9 +147,10 @@ Senha: admin123
 
 ### 3 Usuários Padrão
 ```
-1. admin@empresa.com (Admin RH)
-2. gestor@empresa.com (Gestor)
-3. joao@empresa.com (Funcionário)
+1. ti@empresa.com (TI - Admin Sistema)
+2. rh@empresa.com (RH - Admin Negócio)
+3. gestor@empresa.com (Gestor)
+4. joao@empresa.com (Funcionário)
 ```
 
 ### Configurações Padrão

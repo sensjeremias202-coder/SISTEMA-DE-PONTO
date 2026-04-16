@@ -35,9 +35,11 @@ SISTEMA DE PONTO/
 ### 1️⃣ Teste de Login ✅
 ```
 1. Abra: index.html
-2. Tente: admin@empresa.com / admin123
+2. Tente: ti@empresa.com / ti123
    ▶ Esperado: Redireciona para dashboard.html
-3. Tente: credencial errada
+3. Tente: rh@empresa.com / rh123
+   ▶ Esperado: Redireciona para dashboard.html
+4. Tente: credencial errada
    ▶ Esperado: Mostra alerta "Email ou senha incorretos"
 ```
 
@@ -252,7 +254,7 @@ SISTEMA DE PONTO/
 
 ### Cenário 3: Admin Configura Sistema
 ```
-1. Login: admin@empresa.com / admin123
+1. Login: rh@empresa.com / rh123
 2. Configurações: Altera tolerância para 5min ✓
 3. Funcionários: Adiciona novo ✓
 4. Auditoria: Vê todas as alterações ✓
