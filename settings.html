@@ -48,6 +48,9 @@
                 <button class="tab-btn" onclick="switchTab('users')" style="padding:10px 20px; background:none; border:none; cursor:pointer; border-bottom:3px solid transparent;">
                     Usuários
                 </button>
+                <button class="tab-btn" onclick="switchTab('departments')" style="padding:10px 20px; background:none; border:none; cursor:pointer; border-bottom:3px solid transparent;">
+                    Departamentos
+                </button>
             </div>
 
             <!-- TAB 1: COMPANY -->
@@ -179,6 +182,30 @@
                     </div>
                 </div>
             </div>
+
+            <!-- TAB 4: DEPARTMENTS -->
+            <div id="departments-tab" class="tab-content" style="display:none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Gerenciamento de Departamentos</h2>
+                        <button class="btn btn-success" onclick="openAddDepartmentModal()" style="float:right;">+ Novo Departamento</button>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Criado em</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="departmentsTable">
+                                <!-- Populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -212,7 +239,9 @@
                 </div>
                 <div class="form-group">
                     <label for="userDepartment">Departamento:</label>
-                    <input type="text" id="userDepartment">
+                    <select id="userDepartment">
+                        <option value="">-- Selecionar --</option>
+                    </select>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="AppUtils.closeModal('userModal')">Cancelar</button>
@@ -257,6 +286,10 @@
 
             // Users tab
             loadUsersTable();
+
+            // Departments
+            loadDepartmentsTable();
+            loadDepartmentsSelect();
         }
 
         function loadUsersTable() {
@@ -277,6 +310,123 @@
                     </td>
                 </tr>
             `).join('');
+        }
+
+        /* ===== DEPARTMENTS MANAGEMENT ===== */
+        function loadDepartmentsTable() {
+            const departments = DB.getDepartments();
+            const tbody = document.getElementById('departmentsTable');
+            tbody.innerHTML = departments.map(d => `
+                <tr>
+                    <td>${d.name}</td>
+                    <td>${new Date(d.createdAt).toLocaleString('pt-BR')}</td>
+                    <td>
+                        <div class="table-actions">
+                            <button class="btn btn-sm btn-info" onclick="editDepartment(${d.id})">Editar</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteDepartment(${d.id})">Deletar</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function loadDepartmentsSelect() {
+            const select = document.getElementById('userDepartment');
+            const departments = DB.getDepartments();
+            select.innerHTML = '<option value="">-- Selecionar --</option>' + departments.map(d => `
+                <option value="${d.name}">${d.name}</option>
+            `).join('');
+        }
+
+        function openAddDepartmentModal() {
+            const html = `
+                <div class="modal" id="tempDeptModal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2>Novo Departamento</h2>
+                            <button class="close-btn" onclick="document.getElementById('tempDeptModal').remove();">&times;</button>
+                        </div>
+                        <form id="deptForm">
+                            <div class="form-group">
+                                <label for="deptName">Nome do Departamento:</label>
+                                <input type="text" id="deptName" required>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" onclick="document.getElementById('tempDeptModal').remove();">Cancelar</button>
+                                <button type="submit" class="btn btn-primary">Salvar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = html;
+            document.body.appendChild(wrapper.firstElementChild);
+
+            document.getElementById('deptForm').addEventListener('submit', function(e){
+                e.preventDefault();
+                const name = document.getElementById('deptName').value.trim();
+                if (!name) return AppUtils.showError('Nome do departamento é obrigatório');
+                DB.addDepartment({ name });
+                AppUtils.showSuccess('Departamento criado com sucesso');
+                document.getElementById('tempDeptModal').remove();
+                loadDepartmentsTable();
+                loadDepartmentsSelect();
+            });
+        }
+
+        function editDepartment(id) {
+            const dept = DB.getDepartmentById(id);
+            if (!dept) return AppUtils.showError('Departamento não encontrado');
+
+            const html = `
+                <div class="modal" id="tempDeptEditModal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2>Editar Departamento</h2>
+                            <button class="close-btn" onclick="document.getElementById('tempDeptEditModal').remove();">&times;</button>
+                        </div>
+                        <form id="deptEditForm">
+                            <div class="form-group">
+                                <label for="deptEditName">Nome do Departamento:</label>
+                                <input type="text" id="deptEditName" required value="${dept.name}">
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" onclick="document.getElementById('tempDeptEditModal').remove();">Cancelar</button>
+                                <button type="submit" class="btn btn-primary">Salvar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = html;
+            document.body.appendChild(wrapper.firstElementChild);
+
+            document.getElementById('deptEditForm').addEventListener('submit', function(e){
+                e.preventDefault();
+                const name = document.getElementById('deptEditName').value.trim();
+                if (!name) return AppUtils.showError('Nome do departamento é obrigatório');
+                DB.updateDepartment(id, { name });
+                AppUtils.showSuccess('Departamento atualizado com sucesso');
+                document.getElementById('tempDeptEditModal').remove();
+                loadDepartmentsTable();
+                loadDepartmentsSelect();
+                loadUsersTable();
+            });
+        }
+
+        function deleteDepartment(id) {
+            if (!confirm('Deseja realmente deletar este departamento?')) return;
+            const removed = DB.deleteDepartment(id);
+            if (removed) {
+                AppUtils.showSuccess('Departamento deletado com sucesso');
+                loadDepartmentsTable();
+                loadDepartmentsSelect();
+                loadUsersTable();
+            } else {
+                AppUtils.showError('Erro ao deletar departamento');
+            }
         }
 
         function saveCompanySettings(event) {

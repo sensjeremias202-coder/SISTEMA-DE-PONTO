@@ -27,6 +27,9 @@ class Database {
         if (!localStorage.getItem(this.dbName + '_settings')) {
             this.insertDefaultSettings();
         }
+        if (!localStorage.getItem(this.dbName + '_departments')) {
+            this.insertDefaultDepartments();
+        }
     }
 
     insertDefaultUsers() {
@@ -143,6 +146,91 @@ class Database {
             timezone: 'America/Sao_Paulo'
         };
         localStorage.setItem(this.dbName + '_settings', JSON.stringify(settings));
+    }
+
+    insertDefaultDepartments() {
+        const departments = [
+            { id: 1, name: 'TI', createdAt: new Date().toISOString() },
+            { id: 2, name: 'RH', createdAt: new Date().toISOString() },
+            { id: 3, name: 'Gestão', createdAt: new Date().toISOString() }
+        ];
+        localStorage.setItem(this.dbName + '_departments', JSON.stringify(departments));
+    }
+
+    // ===== DEPARTMENTS =====
+    getDepartments() {
+        return JSON.parse(localStorage.getItem(this.dbName + '_departments') || '[]');
+    }
+
+    getDepartmentById(id) {
+        return this.getDepartments().find(d => d.id === id);
+    }
+
+    addDepartment(department) {
+        const departments = this.getDepartments();
+        department.id = Math.max(...departments.map(d => d.id), 0) + 1;
+        department.createdAt = new Date().toISOString();
+        departments.push(department);
+        localStorage.setItem(this.dbName + '_departments', JSON.stringify(departments));
+        this.addAuditLog('CREATE', 'departments', department.id, `Departamento ${department.name} criado`);
+        return department;
+    }
+
+    updateDepartment(id, data) {
+        const departments = this.getDepartments();
+        const index = departments.findIndex(d => d.id === id);
+        if (index !== -1) {
+            const oldName = departments[index].name;
+            departments[index] = { ...departments[index], ...data };
+            localStorage.setItem(this.dbName + '_departments', JSON.stringify(departments));
+            this.addAuditLog('UPDATE', 'departments', id, `Departamento atualizado`);
+
+            // If department name changed, update employees that referenced the old name
+            if (data.name && data.name !== oldName) {
+                const employees = this.getEmployees();
+                let changed = false;
+                employees.forEach(e => {
+                    if (e.department === oldName) {
+                        e.department = data.name;
+                        changed = true;
+                    }
+                });
+                if (changed) {
+                    localStorage.setItem(this.dbName + '_employees', JSON.stringify(employees));
+                    this.addAuditLog('UPDATE', 'employees', null, `Departamentos dos funcionários atualizados de ${oldName} para ${data.name}`);
+                }
+            }
+
+            return departments[index];
+        }
+        return null;
+    }
+
+    deleteDepartment(id) {
+        const departments = this.getDepartments();
+        const index = departments.findIndex(d => d.id === id);
+        if (index !== -1) {
+            const [removed] = departments.splice(index, 1);
+            localStorage.setItem(this.dbName + '_departments', JSON.stringify(departments));
+            this.addAuditLog('DELETE', 'departments', id, `Departamento ${removed.name} removido`);
+
+            // Remove department name from employees who belonged to this department
+            const employees = this.getEmployees();
+            let changed = false;
+            employees.forEach(e => {
+                if (e.department === removed.name) {
+                    e.department = '';
+                    changed = true;
+                }
+            });
+            if (changed) {
+                localStorage.setItem(this.dbName + '_employees', JSON.stringify(employees));
+                this.addAuditLog('UPDATE', 'employees', null, `Departamento ${removed.name} removido de funcionários`);
+            }
+
+            return removed;
+        }
+        return null;
     }
 
     // ===== USERS =====
