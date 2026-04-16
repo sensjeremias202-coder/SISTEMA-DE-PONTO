@@ -362,6 +362,10 @@
             const wrapper = document.createElement('div');
             wrapper.innerHTML = html;
             document.body.appendChild(wrapper.firstElementChild);
+            const tempModal = document.getElementById('tempDeptModal');
+            if (tempModal) {
+                tempModal.classList.add('active');
+            }
 
             document.getElementById('deptForm').addEventListener('submit', function(e){
                 e.preventDefault();
@@ -402,6 +406,10 @@
             const wrapper = document.createElement('div');
             wrapper.innerHTML = html;
             document.body.appendChild(wrapper.firstElementChild);
+            const editModal = document.getElementById('tempDeptEditModal');
+            if (editModal) {
+                editModal.classList.add('active');
+            }
 
             document.getElementById('deptEditForm').addEventListener('submit', function(e){
                 e.preventDefault();
