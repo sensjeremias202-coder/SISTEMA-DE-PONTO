@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - Sistema de Ponto</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #555;
+            margin-top: 30px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-left: 4px solid #3498db;
+            border-radius: 4px;
+        }
+        button {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px 10px 0;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #c0392b;
+        }
+        button.success {
+            background: #27ae60;
+        }
+        button.success:hover {
+            background: #229954;
+        }
+        .code {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            margin: 10px 0;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status.ok {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .user-list {
+            list-style: none;
+            padding: 0;
+        }
+        .user-list li {
+            padding: 10px;
+            background: white;
+            border: 1px solid #ddd;
+            margin: 5px 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .user-list li strong {
+            color: #3498db;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Debug - Sistema de Ponto</h1>
+
+        <div class="section">
+            <h2>1️⃣ Status do Sistema</h2>
+            <button class="success" onclick="checkStatus()">Verificar Status</button>
+            <div id="statusOutput"></div>
+        </div>
+
+        <div class="section">
+            <h2>2️⃣ Usuários Carregados</h2>
+            <button class="success" onclick="showUsers()">Listar Usuários</button>
+            <div id="usersOutput"></div>
+        </div>
+
+        <div class="section">
+            <h2>3️⃣ Resetar Sistema</h2>
+            <p>⚠️ Isto irá limpar TODOS os dados e restaurar os padrões.</p>
+            <button onclick="resetSystem()">🗑️ Limpar localStorage Completamente</button>
+            <button class="success" onclick="reinitializeUsers()">♻️ Restaurar Usuários Padrão</button>
+            <div id="resetOutput"></div>
+        </div>
+
+        <div class="section">
+            <h2>4️⃣ Testar Login</h2>
+            <p>Email: <input type="text" id="testEmail" value="ti@empresa.com" style="width: 200px; padding: 5px;"></p>
+            <p>Senha: <input type="password" id="testPassword" value="ti123" style="width: 200px; padding: 5px;"></p>
+            <button class="success" onclick="testLogin()">Testar Login</button>
+            <div id="loginOutput"></div>
+        </div>
+
+        <div class="section">
+            <h2>5️⃣ LocalStorage</h2>
+            <button onclick="showStorage()">Mostrar localStorage</button>
+            <button onclick="clearStorage()">🗑️ Limpar localStorage</button>
+            <div id="storageOutput"></div>
+        </div>
+
+        <div class="section">
+            <h2>✅ Próximos Passos</h2>
+            <ol>
+                <li>Clique em "Verificar Status"</li>
+                <li>Se houver erro, clique em "Restaurar Usuários Padrão"</li>
+                <li>Clique em "Testar Login" com ti@empresa.com / ti123</li>
+                <li>Se funcionar, vá para <a href="index.html">index.html</a> e faça login normalmente</li>
+            </ol>
+        </div>
+    </div>
+
+    <script src="js/database.js"></script>
+    <script src="js/sync.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        function output(elementId, message, isError = false) {
+            const el = document.getElementById(elementId);
+            el.innerHTML += `<div class="status ${isError ? 'error' : 'ok'}">${message}</div>`;
+        }
+
+        function clearOutput(elementId) {
+            document.getElementById(elementId).innerHTML = '';
+        }
+
+        function checkStatus() {
+            clearOutput('statusOutput');
+            try {
+                output('statusOutput', '✅ Database.js carregado');
+                const users = DB.getUsers();
+                output('statusOutput', `✅ ${users.length} usuários carregados`);
+                
+                const hasTI = users.some(u => u.email === 'ti@empresa.com');
+                const hasRH = users.some(u => u.email === 'rh@empresa.com');
+                
+                if (hasTI) output('statusOutput', '✅ Usuário TI encontrado');
+                else output('statusOutput', '❌ Usuário TI NÃO encontrado', true);
+                
+                if (hasRH) output('statusOutput', '✅ Usuário RH encontrado');
+                else output('statusOutput', '❌ Usuário RH NÃO encontrado', true);
+            } catch (e) {
+                output('statusOutput', '❌ Erro: ' + e.message, true);
+            }
+        }
+
+        function showUsers() {
+            clearOutput('usersOutput');
+            try {
+                const users = DB.getUsers();
+                let html = '<ul class="user-list">';
+                users.forEach(u => {
+                    html += `<li><strong>${u.email}</strong> (${u.role}) - ${u.name}</li>`;
+                });
+                html += '</ul>';
+                document.getElementById('usersOutput').innerHTML = html;
+            } catch (e) {
+                output('usersOutput', '❌ Erro: ' + e.message, true);
+            }
+        }
+
+        function resetSystem() {
+            if (confirm('⚠️ Isto irá DELETAR TODOS os dados do navegador. Tem certeza?')) {
+                if (confirm('Última chance! Você tem certeza mesmo?')) {
+                    clearOutput('resetOutput');
+                    try {
+                        localStorage.clear();
+                        output('resetOutput', '✅ localStorage completamente limpo');
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+                    } catch (e) {
+                        output('resetOutput', '❌ Erro: ' + e.message, true);
+                    }
+                }
+            }
+        }
+
+        function reinitializeUsers() {
+            clearOutput('resetOutput');
+            try {
+                DB.insertDefaultUsers();
+                output('resetOutput', '✅ Usuários padrão restaurados');
+                output('resetOutput', '✅ Recarregue a página para confirmar');
+            } catch (e) {
+                output('resetOutput', '❌ Erro: ' + e.message, true);
+            }
+        }
+
+        function testLogin() {
+            clearOutput('loginOutput');
+            const email = document.getElementById('testEmail').value;
+            const password = document.getElementById('testPassword').value;
+            
+            try {
+                const result = Auth.login(email, password);
+                if (result) {
+                    output('loginOutput', `✅ Login bem-sucedido para ${email}`);
+                    const user = Auth.getCurrentUser();
+                    output('loginOutput', `Usuário: ${user.name} (${user.role})`);
+                } else {
+                    output('loginOutput', `❌ Email ou senha incorretos`, true);
+                }
+            } catch (e) {
+                output('loginOutput', '❌ Erro: ' + e.message, true);
+            }
+        }
+
+        function showStorage() {
+            clearOutput('storageOutput');
+            const items = Object.entries(localStorage);
+            if (items.length === 0) {
+                document.getElementById('storageOutput').innerHTML = '<div class="status error">localStorage vazio</div>';
+                return;
+            }
+            
+            let html = '<div class="code">';
+            items.forEach(([key, value]) => {
+                try {
+                    const parsed = JSON.parse(value);
+                    html += `<strong>${key}:</strong>\n${JSON.stringify(parsed, null, 2)}\n\n`;
+                } catch (e) {
+                    html += `<strong>${key}:</strong> ${value}\n\n`;
+                }
+            });
+            html += '</div>';
+            document.getElementById('storageOutput').innerHTML = html;
+        }
+
+        function clearStorage() {
+            if (confirm('Limpar localStorage? (Você será desconectado)')) {
+                clearOutput('storageOutput');
+                localStorage.clear();
+                output('storageOutput', '✅ localStorage limpo');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1500);
+            }
+        }
+
+        // Auto-check ao carregar
+        window.addEventListener('load', checkStatus);
+    </script>
+</body>
+</html>
