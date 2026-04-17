@@ -58,7 +58,8 @@
     <script>
         // Show/hide admin menu
         const user = Auth.getCurrentUser();
-        if (user && user.role === 'admin') {
+        const isAdminRole = user && (user.role === 'admin' || user.role === 'admin_system' || user.role === 'admin_business');
+        if (isAdminRole) {
             document.getElementById('admin-menu').style.display = 'block';
             document.getElementById('admin-menu2').style.display = 'block';
             document.getElementById('admin-menu3').style.display = 'block';
@@ -68,7 +69,7 @@
             const content = document.getElementById('dashboardContent');
             const user = Auth.getCurrentUser();
 
-            if (user.role === 'admin') {
+            if (['admin','admin_system','admin_business'].includes(user.role)) {
                 loadAdminDashboard();
             } else if (user.role === 'manager') {
                 loadManagerDashboard();
