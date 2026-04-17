@@ -30,6 +30,8 @@ class Database {
         if (!localStorage.getItem(this.dbName + '_departments')) {
             this.insertDefaultDepartments();
         }
+        // Ensure demo users exist even if users list was customized
+        this.ensureDemoUsers();
     }
 
     insertDefaultUsers() {
