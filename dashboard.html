@@ -188,8 +188,24 @@
 
         function loadEmployeeDashboard() {
             const user = Auth.getCurrentUser();
-            const employee = DB.getEmployeeById(user.employeeId);
-            const timeLogs = DB.getTimeLogsByEmployee(user.employeeId);
+            const employee = (user && user.employeeId) ? DB.getEmployeeById(user.employeeId) : null;
+            // if employee not found by id, try match by email
+            let resolvedEmployee = employee;
+            if (!resolvedEmployee && user && user.email) {
+                const employees = DB.getEmployees();
+                resolvedEmployee = employees.find(e => e.email && e.email.toLowerCase() === user.email.toLowerCase()) || null;
+            }
+            if (!resolvedEmployee) {
+                document.getElementById('dashboardContent').innerHTML = `
+                    <div class="card">
+                        <div class="card-header"><h2>Perfil incompleto</h2></div>
+                        <div class="card-body">Seu usuário não está vinculado a um registro de funcionário. Contate o administrador para vincular seu cadastro.</div>
+                    </div>
+                `;
+                return;
+            }
+            const employeeFinal = resolvedEmployee;
+            const timeLogs = DB.getTimeLogsByEmployee(employeeFinal.id);
             
             // Get last 7 days
             const sevenDaysAgo = new Date();
@@ -208,19 +224,20 @@
                 totalWorked += HourCalculations.calculateDailyWorkedHours(log);
             });
             totalWorked = (totalWorked / 60).toFixed(2);
-            const balance = (totalWorked - employee.monthlyHours).toFixed(2);
+            const monthlyHours = Number(employeeFinal.monthlyHours) || 176;
+            const balance = (totalWorked - monthlyHours).toFixed(2);
 
             document.getElementById('dashboardContent').innerHTML = `
-                <h2>Bem-vindo, ${employee.name}!</h2>
+                <h2>Bem-vindo, ${employeeFinal.name}!</h2>
                 
                 <div class="dashboard-grid">
                     <div class="stat-card blue">
                         <div class="stat-label">Cargo</div>
-                        <div style="font-size: 18px; font-weight: 600;">${employee.position}</div>
+                        <div style="font-size: 18px; font-weight: 600;">${employeeFinal.position || '-'}</div>
                     </div>
                     <div class="stat-card teal">
                         <div class="stat-label">Jornada Esperada (Mês)</div>
-                        <div class="stat-value">${employee.monthlyHours}h</div>
+                        <div class="stat-value">${monthlyHours}h</div>
                     </div>
                     <div class="stat-card green">
                         <div class="stat-label">Horas Trabalhadas (Período)</div>
