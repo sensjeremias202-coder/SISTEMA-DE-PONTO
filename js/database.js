@@ -84,6 +84,29 @@ class Database {
         localStorage.setItem(this.dbName + '_users', JSON.stringify(users));
     }
 
+    ensureDemoUsers() {
+        const users = this.getUsers();
+        const emails = users.map(u => u.email && u.email.toLowerCase());
+        const toAdd = [];
+
+        if (!emails.includes('ti@empresa.com')) {
+            toAdd.push({ email: 'ti@empresa.com', password: 'ti123', name: 'Admin TI', role: 'admin_system', department: 'TI' });
+        }
+        if (!emails.includes('rh@empresa.com')) {
+            toAdd.push({ email: 'rh@empresa.com', password: 'rh123', name: 'Admin RH', role: 'admin_business', department: 'RH' });
+        }
+
+        if (toAdd.length === 0) return;
+
+        let maxId = Math.max(0, ...users.map(u => u.id || 0));
+        toAdd.forEach(u => {
+            maxId += 1;
+            users.push({ id: maxId, email: u.email, password: u.password, name: u.name, role: u.role, department: u.department, createdAt: new Date().toISOString() });
+        });
+
+        localStorage.setItem(this.dbName + '_users', JSON.stringify(users));
+    }
+
     insertDefaultEmployees() {
         const employees = [
             {
